@@ -62,7 +62,7 @@ class Config:
 def load_config() -> Config:
     bot_token = _getenv("BOT_TOKEN")
     admin_ids = _parse_int_list(_getenv("ADMIN_IDS"))
-    database_url = _getenv("DATABASE_URL")
+    database_url = _getenv("DATABASE_PUBLIC_URL")
     env = os.getenv("ENV", "prod")
     tz = os.getenv("TZ", "America/Sao_Paulo")
 
