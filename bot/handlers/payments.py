@@ -107,8 +107,10 @@ async def pick_payment_method(call: CallbackQuery, state: FSMContext, db, cfg):
     else:
         await state.set_state(MentorFlow.wait_proof)
 
-@router.message((LangFlow.wait_proof | YogaFlow.wait_proof | AstroFlow.wait_proof | MentorFlow.wait_proof), F.photo)
-async def receive_proof_photo(message: Message, state: FSMContext, db, cfg, bot):
+# NOTE: aiogram v3 State objects do NOT support `|` (bitwise OR).
+# Register separate handlers per state and reuse shared implementation.
+
+async def _handle_proof_photo(message: Message, state: FSMContext, db, cfg, bot):
     data = await state.get_data()
     payment_id = data.get("payment_id")
     order_id = data.get("order_id")
@@ -135,3 +137,19 @@ async def receive_proof_photo(message: Message, state: FSMContext, db, cfg, bot)
 
     await notify_admins_with_proof(bot, cfg.admin_ids, card, file_id, payment_id)
     await message.answer("Принято. Я отправил чек админам на проверку. Обычно это быстро (если люди бодрствуют).")
+
+@router.message(LangFlow.wait_proof, F.photo)
+async def receive_proof_photo_lang(message: Message, state: FSMContext, db, cfg, bot):
+    await _handle_proof_photo(message, state, db, cfg, bot)
+
+@router.message(YogaFlow.wait_proof, F.photo)
+async def receive_proof_photo_yoga(message: Message, state: FSMContext, db, cfg, bot):
+    await _handle_proof_photo(message, state, db, cfg, bot)
+
+@router.message(AstroFlow.wait_proof, F.photo)
+async def receive_proof_photo_astro(message: Message, state: FSMContext, db, cfg, bot):
+    await _handle_proof_photo(message, state, db, cfg, bot)
+
+@router.message(MentorFlow.wait_proof, F.photo)
+async def receive_proof_photo_mentor(message: Message, state: FSMContext, db, cfg, bot):
+    await _handle_proof_photo(message, state, db, cfg, bot)
