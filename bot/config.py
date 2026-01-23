@@ -99,6 +99,7 @@ def load_config() -> Config:
     sweeper_hour = int(os.getenv("SWEEPER_HOUR", "9"))
     sweeper_minute = int(os.getenv("SWEEPER_MINUTE", "0"))
 
+
     return Config(
         bot_token=bot_token,
         admin_ids=admin_ids,
@@ -119,3 +120,8 @@ def load_config() -> Config:
         sweeper_hour=sweeper_hour,
         sweeper_minute=sweeper_minute,
     )
+
+import os
+print("CONFIG FILE LOADED:", __file__)
+print("GIT SHA:", os.getenv("RAILWAY_GIT_COMMIT_SHA"))
+print("PRICES FIELDS:", [f.name for f in __import__("dataclasses").fields(Prices)])
