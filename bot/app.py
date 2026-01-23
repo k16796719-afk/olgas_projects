@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
-import os
-from datetime import datetime, timedelta, timezone
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.enums import ParseMode
@@ -24,7 +24,11 @@ async def main():
 
     cfg = load_config()
 
-    bot = Bot(token=cfg.bot_token, parse_mode=ParseMode.MARKDOWN)
+    bot = Bot(
+        token=cfg.bot_token,
+        default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN),
+    )
+
     dp = Dispatcher(storage=MemoryStorage())
 
     db = Database(cfg.database_url)
