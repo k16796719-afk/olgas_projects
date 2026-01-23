@@ -2,18 +2,30 @@ from __future__ import annotations
 from typing import Dict, Any
 
 
-def format_order_card(direction_title: str, payload: Dict[str, Any], amount: int, currency: str, method: str, user_line: str | None = None) -> str:
-    def _humanize_value(v):
+from typing import Dict, Any, Optional
+
+def format_order_card(
+    direction_title: str,
+    payload: Dict[str, Any],
+    amount: int,
+    currency: str,
+    method: str,
+    user_line: Optional[str] = None,
+) -> str:
+    def _humanize(v):
         MAP = {
+            # цели
             "abroad": "Жизнь за границей",
             "school": "Школа",
             "travel": "Путешествия",
             "other": "Другое",
 
+            # уровни
             "basic": "Базовый уровень",
             "mid": "Средний уровень",
             "practice": "Говорю, нужна практика",
 
+            # частота
             "1_2": "1–2 раза в неделю",
             "3_5": "3–5 раз в неделю",
         }
@@ -21,22 +33,36 @@ def format_order_card(direction_title: str, payload: Dict[str, Any], amount: int
             return MAP.get(v, v)
         return v
 
-    lines = [
-        "🧾 *Карточка заказа*",
-    ]
+    lines = ["🧾 *Карточка заказа*", ""]
+
     if user_line:
-        lines.append(f"Пользователь: *{user_line}*")
-    lines.append(f"Направление: *{direction_title}*")
+        lines.append(f"👤 *Пользователь:* {user_line}")
+
+    lines.append(f"📚 *Направление:* {direction_title}")
+    lines.append("")
+
+    # содержимое заказа
+    ICONS = {
+        "Цель": "🎯",
+        "Уровень": "📘",
+        "Частота": "⏰",
+        "Продукт": "🧩",
+        "Тариф": "🧘",
+        "Формат": "✨",
+        "Сфера": "🔮",
+        "План": "🧠",
+    }
 
     for k, v in payload.items():
-        lines.append(f"{k}: *{_humanize_value(v)}*")
-    lines += [
-        "",
-        f"Сумма: *{amount}* {currency}",
-        f"Метод оплаты: *{method}*",
-        "",
-        "Пользователь отправил подтверждение оплаты (скрин/чек).",
-    ]
+        icon = ICONS.get(k, "▫️")
+        lines.append(f"{icon} *{k}:* {_humanize(v)}")
+
+    lines.append("")
+    lines.append(f"💰 *Сумма:* {amount} {currency}")
+    lines.append(f"💳 *Способ оплаты:* {method}")
+    lines.append("")
+    lines.append("📎 Пользователь отправил подтверждение оплаты (скрин/чек)")
+
     return "\n".join(lines)
 
 def payment_instructions(method: str, currency: str, cfg) -> str:
