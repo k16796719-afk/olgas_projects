@@ -100,33 +100,31 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
         parse_mode="HTML",
     )
 
-    # имя КЛИЕНТА, не админа
+    # покажем всплывашку
+    await call.answer("✅ Подтверждено")
+
+    # вместо edit_text/edit_caption -> отправляем новое админу
     chat = await bot.get_chat(tg_user_id)
     user_name = chat.full_name
     if chat.username:
         user_name += f" (@{chat.username})"
     safe_user_name = html.escape(user_name)
 
-    admin_text = (
-        "✅ <b>Оплата подтверждена</b>\n"
-        f"👤 Пользователь: <b>{safe_user_name}</b>\n"
-        "📨 Пользователь уведомлён."
+    await bot.send_message(
+        chat_id=call.from_user.id,  # админ, который нажал
+        text=(
+            "✅ <b>Оплата подтверждена</b>\n"
+            f"👤 Пользователь: <b>{safe_user_name}</b>\n"
+            "📨 Пользователь уведомлён."
+        ),
+        parse_mode="HTML",
     )
 
-    # редактируем то сообщение, по которому нажали кнопку:
-    if call.message.text is not None:
-        await call.message.edit_text(
-            admin_text,
-            reply_markup=None,
-            parse_mode="HTML",
-        )
-    else:
-        await call.message.edit_caption(
-            admin_text,
-            reply_markup=None,
-            parse_mode="HTML",
-        )
-
+    # опционально: попробуем убрать кнопки (если не получится — не падаем)
+    try:
+        await call.message.edit_reply_markup(reply_markup=None)
+    except Exception:
+        pass
 
 @router.callback_query(lambda c: c.data.startswith("adm_no:"))
 async def admin_reject(call: CallbackQuery, db, cfg, bot):
