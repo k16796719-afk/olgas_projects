@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import json
 from datetime import datetime, timedelta, timezone
 
 from aiogram import Router, F
@@ -125,6 +127,8 @@ async def _handle_proof_photo(message: Message, state: FSMContext, db, cfg, bot)
     order = await db.get_order(order_id)
     direction = order["direction"]
     payload = order["payload_json"]
+    if isinstance(payload, str):
+        payload = json.loads(payload)
     pay = await db.get_payment(payment_id)
 
     card = format_order_card(
