@@ -33,12 +33,12 @@ def format_order_card(
             return MAP.get(v, v)
         return v
 
-    lines = ["🧾 *Карточка заказа*", ""]
+    lines = []
 
+    lines.append("🧾 <b>Карточка заказа</b>")
     if user_line:
-        lines.append(f"👤 *Пользователь:* {user_line}")
-
-    lines.append(f"📚 *Направление:* {direction_title}")
+        lines.append(f"👤 <b>Пользователь:</b> {user_line}")
+    lines.append(f"📚 <b>Направление:</b> {direction_title}")
     lines.append("")
 
     # содержимое заказа
@@ -55,13 +55,13 @@ def format_order_card(
 
     for k, v in payload.items():
         icon = ICONS.get(k, "▫️")
-        lines.append(f"{icon} *{k}:* {_humanize(v)}")
+        lines.append(f"<b>{icon} *{k}:* {_humanize(v)}</b>")
 
     lines.append("")
-    lines.append(f"💰 *Сумма:* {amount} {currency}")
-    lines.append(f"💳 *Способ оплаты:* {method}")
+    lines.append(f"💰 <b>*Сумма:* {amount} {currency}</b>")
+    lines.append(f"💳 <b>*Способ оплаты:* {method}</b>")
     lines.append("")
-    lines.append("📎 Пользователь отправил подтверждение оплаты (скрин/чек)")
+    lines.append("<b>📎 Пользователь отправил подтверждение оплаты (скрин/чек)</b>")
 
     return "\n".join(lines)
 

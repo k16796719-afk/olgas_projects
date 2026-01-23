@@ -11,7 +11,7 @@ async def notify_admins_with_proof(bot: Bot, admin_ids: list[int], text_md: str,
                 chat_id=aid,
                 photo=proof_file_id,
                 caption=text_md,
-                parse_mode="Markdown",
+                parse_mode="HTML",
                 reply_markup=admin_approve_kb(payment_id),
             )
         except Exception:
@@ -19,6 +19,6 @@ async def notify_admins_with_proof(bot: Bot, admin_ids: list[int], text_md: str,
             await bot.send_message(
                 chat_id=aid,
                 text=text_md + "\n\n(Не смог прикрепить медиа, проверь в истории чата пользователя.)",
-                parse_mode="Markdown",
+                parse_mode="HTML",
                 reply_markup=admin_approve_kb(payment_id),
             )
