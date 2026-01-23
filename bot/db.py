@@ -1,5 +1,6 @@
 from __future__ import annotations
 import asyncpg
+from asyncpg.types import Json
 from typing import Optional, Any, Dict, List
 from datetime import datetime, timezone
 
@@ -109,7 +110,7 @@ class Database:
     async def create_order(self, user_id: int, direction: str, payload: dict, status: str = "draft") -> int:
         row = await self.fetchrow(
             "INSERT INTO orders(user_id, direction, payload_json, status) VALUES($1,$2,$3,$4) RETURNING id",
-            user_id, direction, payload, status
+            user_id, direction, Json(payload), status
         )
         return int(row["id"])
 
