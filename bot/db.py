@@ -1,8 +1,9 @@
 from __future__ import annotations
+
+import json
+
 import asyncpg
-from asyncpg.types import Json
-from typing import Optional, Any, Dict, List
-from datetime import datetime, timezone
+from typing import Optional, List
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS users (
@@ -110,7 +111,7 @@ class Database:
     async def create_order(self, user_id: int, direction: str, payload: dict, status: str = "draft") -> int:
         row = await self.fetchrow(
             "INSERT INTO orders(user_id, direction, payload_json, status) VALUES($1,$2,$3,$4) RETURNING id",
-            user_id, direction, Json(payload), status
+            user_id, direction, json.dumps(payload, ensure_ascii=False), status
         )
         return int(row["id"])
 
