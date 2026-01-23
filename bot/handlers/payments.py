@@ -120,6 +120,12 @@ async def _handle_proof_photo(message: Message, state: FSMContext, db, cfg, bot)
         await message.answer("Что-то сломалось в состоянии. Нажми /menu и начни заново.")
         return
 
+    u = message.from_user
+    user_line = f"{u.full_name}"
+    if u.username:
+        user_line += f" (@{u.username})"
+    user_line += f" | id: {u.id}"
+
     # highest resolution photo file_id
     file_id = message.photo[-1].file_id
     await db.update_payment_proof(payment_id, file_id)
@@ -131,12 +137,14 @@ async def _handle_proof_photo(message: Message, state: FSMContext, db, cfg, bot)
         payload = json.loads(payload)
     pay = await db.get_payment(payment_id)
 
+
     card = format_order_card(
         direction_title=_direction_title(direction),
         payload=payload,
         amount=pay["amount"],
         currency=pay["currency"],
-        method=_method_title(pay["method"]),
+        method=_method_title(pay["method"],
+        user_line=user_line),
     )
 
     await notify_admins_with_proof(bot, cfg.admin_ids, card, file_id, payment_id)

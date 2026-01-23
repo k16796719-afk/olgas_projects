@@ -1,13 +1,35 @@
 from __future__ import annotations
 from typing import Dict, Any
 
-def format_order_card(direction_title: str, payload: Dict[str, Any], amount: int, currency: str, method: str) -> str:
+
+def format_order_card(direction_title: str, payload: Dict[str, Any], amount: int, currency: str, method: str, user_line: str | None = None) -> str:
+    def _humanize_value(v):
+        MAP = {
+            "abroad": "Жизнь за границей",
+            "school": "Школа",
+            "travel": "Путешествия",
+            "other": "Другое",
+
+            "basic": "Базовый уровень",
+            "mid": "Средний уровень",
+            "practice": "Говорю, нужна практика",
+
+            "1_2": "1–2 раза в неделю",
+            "3_5": "3–5 раз в неделю",
+        }
+        if isinstance(v, str):
+            return MAP.get(v, v)
+        return v
+
     lines = [
         "🧾 *Карточка заказа*",
-        f"Направление: *{direction_title}*",
     ]
+    if user_line:
+        lines.append(f"Пользователь: *{user_line}*")
+    lines.append(f"Направление: *{direction_title}*")
+
     for k, v in payload.items():
-        lines.append(f"{k}: *{v}*")
+        lines.append(f"{k}: *{_humanize_value(v)}*")
     lines += [
         "",
         f"Сумма: *{amount}* {currency}",
