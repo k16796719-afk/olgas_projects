@@ -88,7 +88,6 @@ def load_config() -> Config:
         trial_china_rub=int(_getenv("PRICE_TRIAL_CHINA_RUB")),
         china_lesson_rub=int(_getenv("PRICE_CHINA_LESSON_RUB")),
         china_pack10_rub=int(_getenv("PRICE_CHINA_PACK10_RUB")),
-        zh_pack10_rub=int(_getenv("PRICE_ZH_PACK10_RUB")),
         yoga_4_rub=int(_getenv("PRICE_YOGA_4_RUB")),
         yoga_8_rub=int(_getenv("PRICE_YOGA_8_RUB")),
         yoga_10ind_rub=int(_getenv("PRICE_YOGA_10IND_RUB")),
