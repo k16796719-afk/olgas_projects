@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import html
 from datetime import datetime, timedelta, timezone
 
 from aiogram import Router
@@ -98,11 +100,13 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
         parse_mode="HTML",
     )
 
+    safe_user_name = html.escape(user_name)
     await call.message.edit_text(
         "✅ Оплата подтверждена.\n"
-            f"👤 Пользователь: <b>{user_name}</b>\n"
+            f"👤 Пользователь: <b>{safe_user_name}</b>\n"
             f"📨 Пользователь уведомлён.",
         reply_markup=None,
+        parse_mode="HTML",
     )
 
 @router.callback_query(lambda c: c.data.startswith("adm_no:"))
