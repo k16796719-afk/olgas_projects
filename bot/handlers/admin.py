@@ -122,8 +122,9 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
 
     # опционально: попробуем убрать кнопки (если не получится — не падаем)
     try:
-        await call.message.edit_reply_markup(reply_markup=None)
-    except Exception:
+        await call.message.delete()
+    except Exception as e:
+        print("FAILED TO DELETE:", repr(e))
         pass
 
 @router.callback_query(lambda c: c.data.startswith("adm_no:"))
