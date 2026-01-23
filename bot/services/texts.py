@@ -55,11 +55,11 @@ def format_order_card(
 
     for k, v in payload.items():
         icon = ICONS.get(k, "▫️")
-        lines.append(f"<b>{icon} *{k}:* {_humanize(v)}</b>")
+        lines.append(f"<b>{icon} {k}: {_humanize(v)}</b>")
 
     lines.append("")
-    lines.append(f"💰 <b>*Сумма:* {amount} {currency}</b>")
-    lines.append(f"💳 <b>*Способ оплаты:* {method}</b>")
+    lines.append(f"💰 <b>Сумма: {amount} {currency}</b>")
+    lines.append(f"💳 <b>Способ оплаты: {method}</b>")
     lines.append("")
     lines.append("<b>📎 Пользователь отправил подтверждение оплаты (скрин/чек)</b>")
 

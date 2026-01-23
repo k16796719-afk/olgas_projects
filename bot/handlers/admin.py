@@ -82,37 +82,28 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
     # mark order paid
     await db.set_order_status(order["id"], "paid")
 
-    # yoga subscription if needed
-    if direction == D_YOGA:
-        days = cfg.yoga_subscription_days
-        expires_at = datetime.now(timezone.utc) + timedelta(days=days)
-        plan_title = payload.get("Тариф","")
-        if "4" in plan_title:
-            product = "yoga_4"
-        elif "8" in plan_title:
-            product = "yoga_8"
-        else:
-            product = "yoga_10_individual"
-        await db.create_yoga_subscription(user_db_id, product, expires_at, payment_id)
+    u = call.from_user
+    user_name = u.full_name
+    if u.username:
+        user_name += f" (@{u.username})"
 
-    links = await _grant_access(bot, db, cfg, tg_user_id=tg_user_id, user_db_id=user_db_id, direction=direction, payload=payload)
+    await bot.send_message(
+        chat_id=tg_user_id,
+        text=(
+            "✅ <b>Оплата подтверждена</b>\n\n"
+            "Спасибо! Мы получили подтверждение оплаты.\n\n"
+            "💬 В ближайшее время с вами свяжется <b>Ольга</b>, "
+            "чтобы договориться о дальнейших шагах."
+        ),
+        parse_mode="HTML",
+    )
 
-    msg = ["✅ Оплата подтверждена! Вот доступ:"]
-    for title, link in links:
-        msg.append(f"- {title}: {link}")
-    msg.append("")
-    if direction == D_YOGA:
-        msg.append("⏳ Доступ к йоге на 1 месяц. Продление через /menu.")
-    else:
-        msg.append("Дальше работа идет в канале. Этот бот свою часть сделал (как и большинство людей, честно говоря).")
-
-    try:
-        await bot.send_message(tg_user_id, "\n".join(msg))
-    except Exception:
-        pass
-
-    await call.message.edit_caption((call.message.caption or "") + "\n\n✅ Подтверждено админом.")
-    await call.answer("Подтверждено")
+    await call.message.edit_text(
+        "✅ Оплата подтверждена.\n"
+            f"👤 Пользователь: <b>{user_name}</b>\n"
+            f"📨 Пользователь уведомлён.",
+        reply_markup=None,
+    )
 
 @router.callback_query(lambda c: c.data.startswith("adm_no:"))
 async def admin_reject(call: CallbackQuery, db, cfg, bot):
