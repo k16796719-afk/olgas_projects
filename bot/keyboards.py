@@ -40,16 +40,17 @@ def lang_freq_kb() -> InlineKeyboardMarkup:
 
 def lang_product_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Пробное 30 мин (1500₽)", callback_data="lg_prod:trial")],
-        [InlineKeyboardButton(text="10 занятий (пакет)", callback_data="lg_prod:pack10")],
+        [InlineKeyboardButton(text="Пробное 30 мин - 1500₽", callback_data="lg_prod:trial")],
+        [InlineKeyboardButton(text="1 занятие - 3300₽", callback_data="lg_prod:pack10")],
+        [InlineKeyboardButton(text="10 занятий (пакет) - 33000₽", callback_data="lg_prod:pack10")],
         [InlineKeyboardButton(text="⬅️ В меню", callback_data="menu")],
     ])
 
 def yoga_plan_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="4 практики / мес", callback_data="y_plan:yoga_4")],
-        [InlineKeyboardButton(text="8 практик / мес", callback_data="y_plan:yoga_8")],
-        [InlineKeyboardButton(text="Индивидуально 10 / мес", callback_data="y_plan:yoga_10_individual")],
+        [InlineKeyboardButton(text="4 практики/мес - 4000₽", callback_data="y_plan:yoga_4")],
+        [InlineKeyboardButton(text="8 практик/мес - 8000₽", callback_data="y_plan:yoga_8")],
+        [InlineKeyboardButton(text="Индивидуально 10/мес - 30000₽", callback_data="y_plan:yoga_10_individual")],
         [InlineKeyboardButton(text="⬅️ В меню", callback_data="menu")],
     ])
 
@@ -79,15 +80,15 @@ def astrology_spheres_kb() -> InlineKeyboardMarkup:
 
 def astrology_format_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Разбор 1 сферы (1500₽)", callback_data="as_fmt:one")],
-        [InlineKeyboardButton(text="Натальная карта полностью (18000₽)", callback_data="as_fmt:full")],
+        [InlineKeyboardButton(text="Разбор 1 сферы - 1500₽", callback_data="as_fmt:one")],
+        [InlineKeyboardButton(text="Натальная карта полностью - 18000₽", callback_data="as_fmt:full")],
         [InlineKeyboardButton(text="⬅️ В меню", callback_data="menu")],
     ])
 
 def mentoring_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="1 неделя (25 000₽)", callback_data="m_plan:week")],
-        [InlineKeyboardButton(text="1 месяц (100 000₽)", callback_data="m_plan:month")],
+        [InlineKeyboardButton(text="1 неделя - 25 000₽", callback_data="m_plan:week")],
+        [InlineKeyboardButton(text="1 месяц - 100 000₽", callback_data="m_plan:month")],
         [InlineKeyboardButton(text="⬅️ В меню", callback_data="menu")],
     ])
 
