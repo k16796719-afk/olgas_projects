@@ -24,8 +24,6 @@ class Prices:
     trial_rub: int
     en_lesson_rub: int
     en_pack10_rub: int
-    zh_lesson_rub: int
-    zh_pack10_rub: int
     yoga_4_rub: int
     yoga_8_rub: int
     yoga_10ind_rub: int
