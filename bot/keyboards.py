@@ -41,7 +41,7 @@ def lang_freq_kb() -> InlineKeyboardMarkup:
 def lang_product_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Пробное 30 мин - 1500₽", callback_data="lg_prod:trial")],
-        [InlineKeyboardButton(text="1 занятие - 3300₽", callback_data="lg_prod:pack10")],
+        [InlineKeyboardButton(text="1 занятие - 3000₽", callback_data="lg_prod:single")],
         [InlineKeyboardButton(text="10 занятий (пакет) - 33000₽", callback_data="lg_prod:pack10")],
         [InlineKeyboardButton(text="⬅️ В меню", callback_data="menu")],
     ])

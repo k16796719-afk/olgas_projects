@@ -55,10 +55,13 @@ async def lang_product(call: CallbackQuery, state: FSMContext, cfg):
     direction = data["direction"]
     # determine amount
     if prod == "trial":
-        amount = cfg.prices.trial_rub
+        amount = cfg.prices.trial_rub if direction == D_ENGLISH else cfg.prices.trial_china_rub
         title = "Пробное 30 минут"
+    elif prod == "single":
+        amount = cfg.price_lang_single_rub if direction == D_ENGLISH else cfg.price_lang_single_china_rub
+        title = "1 занятие"
     else:
-        amount = cfg.prices.en_pack10_rub if direction == D_ENGLISH else cfg.prices.zh_pack10_rub
+        amount = cfg.prices.en_pack10_rub if direction == D_ENGLISH else cfg.prices.cn_pack10_rub
         title = "Пакет 10 занятий"
     await state.update_data(product=prod, product_title=title, amount=amount)
     await state.set_state(LangFlow.payment)

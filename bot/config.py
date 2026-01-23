@@ -33,6 +33,9 @@ class Prices:
     astro_full_rub: int
     mentor_week_rub: int
     mentor_month_rub: int
+    trial_china_rub: int
+    china_lesson_rub: int
+    china_pack10_rub: int
 
 @dataclass(frozen=True)
 class Config:
@@ -82,7 +85,9 @@ def load_config() -> Config:
         trial_rub=int(_getenv("PRICE_TRIAL_RUB")),
         en_lesson_rub=int(_getenv("PRICE_EN_LESSON_RUB")),
         en_pack10_rub=int(_getenv("PRICE_EN_PACK10_RUB")),
-        zh_lesson_rub=int(_getenv("PRICE_ZH_LESSON_RUB")),
+        trial_china_rub=int(_getenv("PRICE_TRIAL_CHINA_RUB")),
+        china_lesson_rub=int(_getenv("PRICE_CHINA_LESSON_RUB")),
+        china_pack10_rub=int(_getenv("PRICE_CHINA_PACK10_RUB")),
         zh_pack10_rub=int(_getenv("PRICE_ZH_PACK10_RUB")),
         yoga_4_rub=int(_getenv("PRICE_YOGA_4_RUB")),
         yoga_8_rub=int(_getenv("PRICE_YOGA_8_RUB")),
