@@ -143,8 +143,8 @@ async def _handle_proof_photo(message: Message, state: FSMContext, db, cfg, bot)
         payload=payload,
         amount=pay["amount"],
         currency=pay["currency"],
-        method=_method_title(pay["method"],
-        user_line=user_line),
+        method=_method_title(pay["method"]),
+        user_line=user_line,
     )
 
     await notify_admins_with_proof(bot, cfg.admin_ids, card, file_id, payment_id)
