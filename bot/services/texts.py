@@ -72,7 +72,7 @@ def format_order_card(
         "Продукт": "🧩",
         "Тариф": "🧘",
         "Формат": "✨",
-        "Сфера": "🔮",
+#        "Сфера": "🔮",
         "План": "🧠",
     }
 
@@ -80,9 +80,9 @@ def format_order_card(
         icon = ICONS.get(k, "▫️")
         lines.append(f"<b>{icon} {k}: {_humanize(v)}</b>")
 
-    is_astro = direction_title.lower().startswith("астр")
-    if is_astro and "sphere" in payload:
-        sphere = _humanize_astro_sphere(payload["sphere"])
+    sphere_key = payload.get("Сфера")  # <-- а не "sphere"
+    if sphere_key:
+        sphere = _humanize_astro_sphere(sphere_key)
         lines.append(f"🔮 <b>Сфера:</b> {sphere}")
 
     lines.append("")
