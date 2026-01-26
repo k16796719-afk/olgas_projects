@@ -93,8 +93,10 @@ def format_order_card(
     print(sphere)
     print(payload.get("Сфера"))
 
-    if direction == "astro" and sphere_raw:
-        lines.append(f"🔮 Сфера: <b>{sphere}</b>")
+    is_astro = direction_title.lower().startswith("астр")
+    if is_astro and "sphere" in payload:
+        sphere = _humanize_astro_sphere(payload["sphere"])
+        lines.append(f"🔮 <b>Сфера:</b> {sphere}")
 
     lines.append("")
     lines.append(f"💰 <b>Сумма: {amount} RUB </b>")
