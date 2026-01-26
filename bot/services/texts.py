@@ -77,6 +77,8 @@ def format_order_card(
     }
 
     for k, v in payload.items():
+        if k == "Сфера":
+            continue
         icon = ICONS.get(k, "▫️")
         lines.append(f"<b>{icon} {k}: {_humanize(v)}</b>")
 
