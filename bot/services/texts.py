@@ -78,6 +78,7 @@ def format_order_card(
 
     print("DIRECTION TITLE")
     print(direction_title)
+    print(direction)
 
     for k, v in payload.items():
         icon = ICONS.get(k, "▫️")
