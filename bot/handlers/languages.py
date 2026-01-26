@@ -60,7 +60,7 @@ async def lang_product(call: CallbackQuery, state: FSMContext, cfg):
         amount = cfg.prices.trial_rub if direction == D_ENGLISH else cfg.prices.trial_china_rub
         title = "Пробное 30 минут"
     elif prod == "single":
-        amount = cfg.prices.en_lesson_rub if direction == D_ENGLISH else cfg.price.china_lesson_rub
+        amount = cfg.prices.en_lesson_rub if direction == D_ENGLISH else cfg.prices.china_lesson_rub
         title = "1 занятие"
     else:
         amount = cfg.prices.en_pack10_rub if direction == D_ENGLISH else cfg.prices.china_pack10_rub

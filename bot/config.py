@@ -49,6 +49,7 @@ class Config:
     yoga_personal_channel_id: Optional[int]
 
     pay_rub_card_details: str
+    pay_rub_card_owner: str | None
     pay_pix_key: str
     pay_pix_receiver_name: str
     pay_crypto_network: str
@@ -74,6 +75,7 @@ def load_config() -> Config:
     yoga_personal_channel_id = int(ypc) if ypc else None
 
     pay_rub_card_details = _getenv("PAY_RUB_CARD_DETAILS")
+    pay_rub_card_owner = _getenv_opt("PAY_RUB_CARD_OWNER")
     pay_pix_key = _getenv("PAY_PIX_KEY")
     pay_pix_receiver_name = _getenv("PAY_PIX_RECEIVER_NAME")
     pay_crypto_network = _getenv("PAY_CRYPTO_NETWORK")
@@ -119,6 +121,7 @@ def load_config() -> Config:
         yoga_subscription_days=yoga_subscription_days,
         sweeper_hour=sweeper_hour,
         sweeper_minute=sweeper_minute,
+        pay_rub_card_owner=pay_rub_card_owner,
     )
 
 import os
