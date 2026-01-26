@@ -4,17 +4,15 @@ from typing import Dict, Any
 
 from typing import Dict, Any, Optional
 
-from typing import Dict, Any, Optional
-
 def format_order_card(
     direction_title: str,
     payload: Dict[str, Any],
     amount: int,
-    currency: str,   # оставляем аргумент, но в выводе пока всегда RUB
+    currency: str,
     method: str,
     user_line: Optional[str] = None,
 ) -> str:
-    def _humanize_lang(v):
+    def _humanize(v):
         MAP = {
             # цели
             "abroad": "Жизнь за границей",
@@ -31,7 +29,9 @@ def format_order_card(
             "1_2": "1–2 раза в неделю",
             "3_5": "3–5 раз в неделю",
         }
-        return MAP.get(v, v) if isinstance(v, str) else v
+        if isinstance(v, str):
+            return MAP.get(v, v)
+        return v
 
     def _humanize_astro_sphere(v):
         MAP = {
@@ -49,54 +49,50 @@ def format_order_card(
             "friends": "Сообщества и друзья",
             "spirit": "Подсознание и духовность",
         }
-        return MAP.get(v, v) if isinstance(v, str) else v
 
-    def _add_line(lines, icon: str, title: str, value: Any, humanize_fn=None):
-        if value is None or value == "":
-            return
-        if humanize_fn:
-            value = humanize_fn(value)
-        lines.append(f"{icon} <b>{title}:</b> {value}")
+        if isinstance(v, str):
+            return MAP.get(v, v)
+        return v
 
-    # определяем направление (лучше передавать отдельно, но раз уже в payload бывает)
-    direction = payload.get("direction")  # например "astro" / "english" / "yoga"
-    # если direction не кладёшь в payload — ок, тогда сфера/цель и т.д. всё равно обработается по наличию ключей
+    direction = payload.get("direction")
 
-    lines: list[str] = []
+    lines = []
+
     lines.append("🧾 <b>Карточка заказа</b>")
     if user_line:
         lines.append(f"👤 <b>Пользователь:</b> {user_line}")
     lines.append(f"📚 <b>Направление:</b> {direction_title}")
     lines.append("")
 
-    # ======= АСТРОЛОГИЯ =======
-    if direction == "astro" or "sphere" in payload:
-        _add_line(lines, "🔮", "Сфера", payload.get("sphere"), humanize_fn=_humanize_astro_sphere)
-        _add_line(lines, "✨", "Формат", payload.get("format"))
-        # если у тебя есть ещё поля астрологии — добавляй сюда явно
+    # содержимое заказа
+    ICONS = {
+        "Цель": "🎯",
+        "Уровень": "📘",
+        "Частота": "⏰",
+        "Продукт": "🧩",
+        "Тариф": "🧘",
+        "Формат": "✨",
+        "Сфера": "🔮",
+        "План": "🧠",
+    }
 
-    # ======= ЯЗЫКИ (EN / CN) =======
-    elif direction in ("english", "chinese") or ("goal" in payload or "level" in payload or "freq" in payload):
-        _add_line(lines, "🎯", "Цель", payload.get("goal"), humanize_fn=_humanize_lang)
-        _add_line(lines, "📘", "Уровень", payload.get("level"), humanize_fn=_humanize_lang)
-        _add_line(lines, "⏰", "Частота", payload.get("freq"), humanize_fn=_humanize_lang)
-        _add_line(lines, "🧩", "Продукт", payload.get("product"))
-        # если у тебя product хранится как trial/single/pack10, можно сделать отдельный humanize при желании
+    for k, v in payload.items():
+        icon = ICONS.get(k, "▫️")
+        lines.append(f"<b>{icon} {k}: {_humanize(v)}</b>")
 
-    # ======= ЙОГА =======
-    elif direction == "yoga" or ("tariff" in payload or "plan" in payload):
-        _add_line(lines, "🧘", "Тариф", payload.get("tariff") or payload.get("plan"))
-        _add_line(lines, "✨", "Формат", payload.get("format"))
+    sphere_raw = payload.get("sphere")
+    print("PAYLOAD")
+    print(payload)
+    print(sphere_raw)
+    sphere = _humanize_astro_sphere(sphere_raw)
+    print(sphere)
 
-    # ======= ПРОЧЕЕ (fallback) =======
-    else:
-        # На случай если payload неожиданный: покажем только безопасные/понятные поля
-        _add_line(lines, "✨", "Формат", payload.get("format"))
-        _add_line(lines, "🧩", "Продукт", payload.get("product"))
+    if direction == "astro" and sphere_raw:
+        lines.append(f"🔮 Сфера: <b>{sphere}</b>")
 
     lines.append("")
-    lines.append(f"💰 <b>Сумма:</b> {amount} RUB")
-    lines.append(f"💳 <b>Способ оплаты:</b> {method}")
+    lines.append(f"💰 <b>Сумма: {amount} RUB </b>")
+    lines.append(f"💳 <b>Способ оплаты: {method}</b>")
     lines.append("")
     lines.append("<b>📎 Пользователь отправил подтверждение оплаты (скрин/чек)</b>")
 
