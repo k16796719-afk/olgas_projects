@@ -33,6 +33,31 @@ def format_order_card(
             return MAP.get(v, v)
         return v
 
+    def _humanize_astro_sphere(v):
+        MAP = {
+            "self": "Я и моя личность",
+            "money": "Деньги, мои ресурсы",
+            "edu": "Учёба",
+            "family": "Семья, корни",
+            "kids": "Творчество",
+            "health": "Здоровье",
+
+            "sex": "Партнёрство",
+            "crisis": "Кризисы",
+            "travel": "Путешествия",
+            "career": "Карьера",
+            "friends": "Сообщества и друзья",
+            "spirit": "Подсознание и духовность",
+        }
+
+        if isinstance(v, str):
+            return MAP.get(v, v)
+        return v
+
+    sphere_raw = payload.get("sphere")
+    sphere = _humanize_astro_sphere(sphere_raw)
+    direction = payload.get("direction")
+
     lines = []
 
     lines.append("🧾 <b>Карточка заказа</b>")
@@ -57,8 +82,11 @@ def format_order_card(
         icon = ICONS.get(k, "▫️")
         lines.append(f"<b>{icon} {k}: {_humanize(v)}</b>")
 
+    if direction == "astro" and sphere_raw:
+        lines.append(f"🔮 Сфера: <b>{sphere}</b>")
+
     lines.append("")
-    lines.append(f"💰 <b>Сумма: {amount} {currency}</b>")
+    lines.append(f"💰 <b>Сумма: {amount} RUB </b>")
     lines.append(f"💳 <b>Способ оплаты: {method}</b>")
     lines.append("")
     lines.append("<b>📎 Пользователь отправил подтверждение оплаты (скрин/чек)</b>")
