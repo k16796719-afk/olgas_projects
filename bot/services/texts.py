@@ -77,12 +77,13 @@ def format_order_card(
     }
 
     print("DIRECTION TITLE")
+    print("DIRECTION")
     print(direction_title)
     print(direction)
 
     for k, v in payload.items():
         icon = ICONS.get(k, "▫️")
-        lines.append(f"<b>{icon} {k}: {_humanize(v) if direction_title != "Астрология" else _humanize_astro_sphere(v)}</b>")
+        # lines.append(f"<b>{icon} {k}: {_humanize(v) if direction_title != "Астрология" else _humanize_astro_sphere(v)}</b>")
 
     sphere_raw = payload.get("sphere")
     print("PAYLOAD")
