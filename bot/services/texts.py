@@ -76,6 +76,9 @@ def format_order_card(
         "План": "🧠",
     }
 
+    print("DIRECTION TITLE")
+    print(direction_title)
+
     for k, v in payload.items():
         icon = ICONS.get(k, "▫️")
         lines.append(f"<b>{icon} {k}: {_humanize(v) if direction_title != "Астрология" else _humanize_astro_sphere(v)}</b>")
