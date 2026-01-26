@@ -10,11 +10,11 @@ from bot.constants import D_YOGA, YOGA_4, YOGA_8, YOGA_10IND
 router = Router()
 
 @router.callback_query(lambda c: c.data == "dir:yoga")
-async def yoga_start(call: CallbackQuery, state: FSMContext):
+async def yoga_start(call: CallbackQuery, state: FSMContext, cfg):
     await state.clear()
     await state.update_data(direction=D_YOGA)
     await state.set_state(YogaFlow.plan)
-    await call.message.edit_text("Выбери абонемент йоги:", reply_markup=yoga_plan_kb())
+    await call.message.edit_text("Выбери абонемент йоги:", reply_markup=yoga_plan_kb(cfg))
     await call.answer()
 
 @router.callback_query(YogaFlow.plan, lambda c: c.data.startswith("y_plan:"))

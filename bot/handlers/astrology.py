@@ -18,11 +18,11 @@ async def astro_start(call: CallbackQuery, state: FSMContext):
     await call.answer()
 
 @router.callback_query(AstroFlow.sphere, lambda c: c.data.startswith("as_sphere:"))
-async def astro_sphere(call: CallbackQuery, state: FSMContext):
+async def astro_sphere(call: CallbackQuery, state: FSMContext, cfg):
     sphere = call.data.split(":",1)[1]
     await state.update_data(sphere=sphere)
     await state.set_state(AstroFlow.fmt)
-    await call.message.edit_text("Выбери формат:", reply_markup=astrology_format_kb())
+    await call.message.edit_text("Выбери формат:", reply_markup=astrology_format_kb(cfg))
     await call.answer()
 
 @router.callback_query(AstroFlow.fmt, lambda c: c.data.startswith("as_fmt:"))

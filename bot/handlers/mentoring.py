@@ -10,11 +10,11 @@ from bot.constants import D_MENTOR
 router = Router()
 
 @router.callback_query(lambda c: c.data == "dir:mentoring")
-async def mentor_start(call: CallbackQuery, state: FSMContext):
+async def mentor_start(call: CallbackQuery, state: FSMContext, cfg):
     await state.clear()
     await state.update_data(direction=D_MENTOR)
     await state.set_state(MentorFlow.plan)
-    await call.message.edit_text("Выбери план менторства:", reply_markup=mentoring_kb())
+    await call.message.edit_text("Выбери план менторства:", reply_markup=mentoring_kb(cfg))
     await call.answer()
 
 @router.callback_query(MentorFlow.plan, lambda c: c.data.startswith("m_plan:"))
