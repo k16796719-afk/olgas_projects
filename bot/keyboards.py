@@ -38,36 +38,59 @@ def lang_freq_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="⬅️ В меню", callback_data="menu")],
     ])
 
-def lang_product_kb() -> InlineKeyboardMarkup:
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+# проверь, что эти константы у тебя совпадают
+D_ENGLISH = "english"
+D_CHINESE = "chinese"
+
+def lang_product_kb(cfg, direction: str) -> InlineKeyboardMarkup:
+    p = cfg.prices
+
+    if direction == D_ENGLISH:
+        trial = p.trial_rub
+        single = p.en_lesson_rub
+        pack10 = p.en_pack10_rub
+        flag = "🇬🇧"
+    else:  # китайский
+        trial = p.trial_china_rub
+        single = p.china_lesson_rub
+        pack10 = p.china_pack10_rub
+        flag = "🇨🇳"
+
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Пробное 30 мин - 1500₽", callback_data="lg_prod:trial")],
-        [InlineKeyboardButton(text="1 занятие - 3000₽", callback_data="lg_prod:single")],
-        [InlineKeyboardButton(text="10 занятий (пакет) - 33000₽", callback_data="lg_prod:pack10")],
+        [InlineKeyboardButton(text=f"{flag} Пробное 30 мин - {trial}₽", callback_data="lg_prod:trial")],
+        [InlineKeyboardButton(text=f"{flag} 1 занятие - {single}₽", callback_data="lg_prod:single")],
+        [InlineKeyboardButton(text=f"{flag} 10 занятий (пакет) - {pack10}₽", callback_data="lg_prod:pack10")],
         [InlineKeyboardButton(text="⬅️ В меню", callback_data="menu")],
     ])
 
-def yoga_plan_kb() -> InlineKeyboardMarkup:
+
+def yoga_plan_kb(cfg) -> InlineKeyboardMarkup:
+    p = cfg.prices
+
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="4 практики/мес - 4000₽", callback_data="y_plan:yoga_4")],
-        [InlineKeyboardButton(text="8 практик/мес - 8000₽", callback_data="y_plan:yoga_8")],
-        [InlineKeyboardButton(text="Индивидуально 10/мес - 30000₽", callback_data="y_plan:yoga_10_individual")],
+        [InlineKeyboardButton(text=f"4 практики /месяц - {p.yoga_4_rub}₽", callback_data="y_plan:yoga_4")],
+        [InlineKeyboardButton(text=f"8 практик /месяц - {p.yoga_8_rub}₽", callback_data="y_plan:yoga_8")],
+        [InlineKeyboardButton(text=f"Индивидуально 1-1 10 практик /месяц - {p.yoga_10ind_rub}₽", callback_data="y_plan:yoga_10_individual")],
         [InlineKeyboardButton(text="⬅️ В меню", callback_data="menu")],
     ])
 
 def astrology_spheres_kb() -> InlineKeyboardMarkup:
     spheres = [
-        ("Саморазвитие", "self"),
-        ("Предназначение", "purpose"),
-        ("Карьера", "career"),
-        ("Финансы", "money"),
-        ("Дети", "kids"),
-        ("Отношения", "relations"),
-        ("Секс", "sex"),
-        ("Любовь", "love"),
+        ("Я и моя личность", "self"),
+        ("Деньги, мои ресурсы", "money"),
+        ("Учеба", "edu"),
+        ("Семья, корни", "family"),
+        ("Творчество ", "kids"),
         ("Здоровье", "health"),
-        ("Коммуникации", "comm"),
+
+        ("Партнерство", "sex"),
+        ("Кризисы", "crisis"),
         ("Путешествия", "travel"),
-        ("Образование", "edu"),
+        ("Карьера", "career"),
+        ("Сообщества - друзья", "friends"),
+        ("Подсознание и духовность", "spirit"),
     ]
     rows = []
     for i in range(0, len(spheres), 2):
@@ -78,17 +101,19 @@ def astrology_spheres_kb() -> InlineKeyboardMarkup:
     rows.append([InlineKeyboardButton(text="⬅️ В меню", callback_data="menu")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
-def astrology_format_kb() -> InlineKeyboardMarkup:
+def astrology_format_kb(cfg) -> InlineKeyboardMarkup:
+    p = cfg.prices
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Разбор 1 сферы - 1500₽", callback_data="as_fmt:one")],
-        [InlineKeyboardButton(text="Натальная карта полностью - 18000₽", callback_data="as_fmt:full")],
+        [InlineKeyboardButton(text=f"Разбор 1 сферы - {p.astro_1_rub}₽", callback_data="as_fmt:one")],
+        [InlineKeyboardButton(text=f"Натальная карта полностью - {p.astro_full_rub}₽", callback_data="as_fmt:full")],
         [InlineKeyboardButton(text="⬅️ В меню", callback_data="menu")],
     ])
 
-def mentoring_kb() -> InlineKeyboardMarkup:
+def mentoring_kb(cfg) -> InlineKeyboardMarkup:
+    p = cfg.prices
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="1 неделя - 25 000₽", callback_data="m_plan:week")],
-        [InlineKeyboardButton(text="1 месяц - 100 000₽", callback_data="m_plan:month")],
+        [InlineKeyboardButton(text=f"1 неделя - {p.mentor_week_rub}₽", callback_data="m_plan:week")],
+        [InlineKeyboardButton(text=f"1 месяц - {p.mentor_month_rub}₽", callback_data="m_plan:month")],
         [InlineKeyboardButton(text="⬅️ В меню", callback_data="menu")],
     ])
 

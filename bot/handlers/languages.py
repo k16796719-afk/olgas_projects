@@ -42,9 +42,11 @@ async def lang_freq(call: CallbackQuery, state: FSMContext, cfg):
     freq = call.data.split(":",1)[1]
     await state.update_data(freq=freq)
     await state.set_state(LangFlow.product)
+    data = await state.get_data()
+    direction = data["direction"]
     await call.message.edit_text(
         "Выбери продукт:",
-        reply_markup=lang_product_kb()
+        reply_markup=lang_product_kb(cfg, direction)
     )
     await call.answer()
 

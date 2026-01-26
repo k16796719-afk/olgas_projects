@@ -22,13 +22,13 @@ async def yoga_plan(call: CallbackQuery, state: FSMContext, cfg):
     plan = call.data.split(":",1)[1]
     if plan == YOGA_4:
         amount = cfg.prices.yoga_4_rub
-        title = "Йога: 4 практики / мес"
+        title = "Йога: 4 практики / месяц"
     elif plan == YOGA_8:
         amount = cfg.prices.yoga_8_rub
-        title = "Йога: 8 практик / мес"
+        title = "Йога: 8 практик / месяц"
     else:
         amount = cfg.prices.yoga_10ind_rub
-        title = "Йога: индивидуально 10 / мес"
+        title = "Йога: индивидуально 1-1 10 практик / месяц"
     await state.update_data(yoga_plan=plan, product_title=title, amount=amount)
     await state.set_state(YogaFlow.payment)
     await call.message.edit_text(

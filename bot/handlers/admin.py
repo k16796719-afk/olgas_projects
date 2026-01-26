@@ -84,21 +84,87 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
     # mark order paid
     await db.set_order_status(order["id"], "paid")
 
-    u = call.from_user
-    user_name = u.full_name
-    if u.username:
-        user_name += f" (@{u.username})"
+    from datetime import datetime, timedelta
+    import json
 
-    await bot.send_message(
-        chat_id=tg_user_id,
-        text=(
-            "✅ <b>Оплата подтверждена</b>\n\n"
-            "Спасибо! Мы получили подтверждение оплаты.\n\n"
-            "💬 В ближайшее время с вами свяжется <b>Ольга</b>, "
-            "чтобы договориться о дальнейших шагах."
-        ),
-        parse_mode="HTML",
-    )
+    def _extract_yoga_plan(payload) -> int | None:
+        """
+        Returns 4 or 8 if can detect, else None.
+        """
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except Exception:
+                return None
+        if not isinstance(payload, dict):
+            return None
+
+        # try several possible keys
+        for key in ("Тариф", "План", "Абонемент", "Yoga plan", "yoga_plan", "plan"):
+            v = payload.get(key)
+            if not v:
+                continue
+            s = str(v).lower()
+            # detect 4 or 8
+            if "8" in s:
+                return 8
+            if "4" in s:
+                return 4
+        return None
+
+    payload = order["payload_json"]
+
+    if direction == "yoga":
+        plan = _extract_yoga_plan(payload)
+        channel_id = None
+        if plan == 4:
+            channel_id = cfg.yoga_channel_4_id
+        elif plan == 8:
+            channel_id = cfg.yoga_channel_8_id
+
+        if channel_id:
+            invite = await bot.create_chat_invite_link(
+                chat_id=channel_id,
+                name=f"yoga{plan}:{tg_user_id}:{payment_id}",
+                member_limit=1,
+                expire_date=datetime.utcnow() + timedelta(days=2),
+            )
+
+            await bot.send_message(
+                chat_id=tg_user_id,
+                text=(
+                    "✅ <b>Оплата подтверждена</b>\n\n"
+                    f"🧘 Ваш тариф: <b>{plan} занятий/мес</b>\n"
+                    "Вот ссылка для входа в закрытый канал:\n\n"
+                    f"🔗 {invite.invite_link}\n\n"
+                    "Если ссылка не открывается — напишите Ольге."
+                ),
+                parse_mode="HTML",
+            )
+        else:
+            # if we can't detect plan, don't crash
+            await bot.send_message(
+                chat_id=tg_user_id,
+                text=(
+                    "✅ <b>Оплата подтверждена</b>\n\n"
+                    "Спасибо! Мы получили подтверждение оплаты.\n\n"
+                    "💬 В ближайшее время с вами свяжется <b>Ольга</b>, "
+                    "чтобы договориться о дальнейших шагах."
+                ),
+                parse_mode="HTML",
+            )
+
+    else:
+        await bot.send_message(
+            chat_id=tg_user_id,
+            text=(
+                "✅ <b>Оплата подтверждена</b>\n\n"
+                "Спасибо! Мы получили подтверждение оплаты.\n\n"
+                "💬 В ближайшее время с вами свяжется <b>Ольга</b>, "
+                "чтобы договориться о дальнейших шагах."
+            ),
+            parse_mode="HTML",
+        )
 
     # покажем всплывашку
     await call.answer("✅ Подтверждено")
