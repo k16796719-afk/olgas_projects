@@ -208,3 +208,12 @@ class Database:
             "UPDATE payments SET status='cancelled' WHERE order_id=$1 AND status='pending'",
             order_id
         )
+
+    async def get_user_id_by_tg(self, tg_user_id: int) -> int | None:
+        row = await self.fetchrow(
+            "SELECT id FROM users WHERE tg_user_id=$1",
+            tg_user_id,
+        )
+        if not row:
+            return None
+        return int(row["id"])
