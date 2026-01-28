@@ -70,7 +70,7 @@ def load_config() -> Config:
     env = os.getenv("ENV", "prod")
     tz = os.getenv("TZ", "America/Sao_Paulo")
 
-    olga_telegram = _getenv_opt("OLGA_TG_USERNAME")
+    olga_telegram = _getenv_opt("OLGA_TG_USERNAME", "@tabakaeva_olga")
 
     channel_personal_id = int(_getenv("CHANNEL_PERSONAL_ID"))
     yoga_channel_4_id = int(_getenv("YOGA_CHANNEL_4_ID"))
@@ -79,7 +79,7 @@ def load_config() -> Config:
     yoga_personal_channel_id = int(ypc) if ypc else None
 
     pay_rub_card_details = _getenv("PAY_RUB_CARD_DETAILS")
-    pay_rub_card_owner = _getenv_opt("PAY_RUB_CARD_OWNER")
+    pay_rub_card_owner = _getenv_opt("PAY_RUB_CARD_OWNER", "Табакаева О.А")
     pay_pix_key = _getenv("PAY_PIX_KEY")
     pay_pix_receiver_name = _getenv("PAY_PIX_RECEIVER_NAME")
     pay_crypto_network = _getenv("PAY_CRYPTO_NETWORK")
