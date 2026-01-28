@@ -7,6 +7,7 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
 
+from bot.keyboards import payment_wait_kb, payment_method_kb
 from bot.states import LangFlow, YogaFlow, AstroFlow, MentorFlow
 from bot.services.texts import payment_instructions, format_order_card
 from bot.services.notify import notify_admins_with_proof
@@ -96,7 +97,11 @@ async def pick_payment_method(call: CallbackQuery, state: FSMContext, db, cfg):
     await state.update_data(order_id=order_id, payment_id=payment_id, pay_method=method, pay_currency=currency)
 
     instr = payment_instructions(method=method, currency=currency, cfg=cfg)
-    await call.message.edit_text(instr)
+    await call.message.edit_text(
+        instr,
+        reply_markup=payment_wait_kb(order_id),
+        parse_mode="HTML",  # если instr содержит HTML
+    )
     await call.answer("Жду подтверждение оплаты (скрин/чек)")
 
     # move to wait_proof depending on flow
@@ -165,3 +170,48 @@ async def receive_proof_photo_astro(message: Message, state: FSMContext, db, cfg
 @router.message(MentorFlow.wait_proof, F.photo)
 async def receive_proof_photo_mentor(message: Message, state: FSMContext, db, cfg, bot):
     await _handle_proof_photo(message, state, db, cfg, bot)
+
+@router.callback_query(lambda c: c.data.startswith("pay_change:"))
+async def pay_change(call: CallbackQuery, state: FSMContext, db, cfg):
+    order_id = int(call.data.split(":", 1)[1])
+
+    order = await db.get_order(order_id)
+    if not order or order["status"] == "paid":
+        await call.answer("Этот заказ уже обработан", show_alert=True)
+        return
+
+    # защита: только владелец заказа
+    uid = await db.get_user_id_by_tg(call.from_user.id)  # сделай/используй свою функцию
+    if int(order["user_id"]) != int(uid):
+        await call.answer("Нет доступа", show_alert=True)
+        return
+
+    await db.cancel_pending_payments_for_order(order_id)
+    await call.message.edit_text(
+        "Выберите другой способ оплаты:",
+        reply_markup=payment_method_kb(prefix="order"),  # или твой реальный prefix
+    )
+    await call.answer()
+
+@router.callback_query(lambda c: c.data.startswith("order_cancel:"))
+async def order_cancel(call: CallbackQuery, state: FSMContext, db):
+    order_id = int(call.data.split(":", 1)[1])
+
+    order = await db.get_order(order_id)
+    if not order or order["status"] == "paid":
+        await call.answer("Этот заказ уже обработан", show_alert=True)
+        return
+
+    uid = await db.get_user_id_by_tg(call.from_user.id)
+    if int(order["user_id"]) != int(uid):
+        await call.answer("Нет доступа", show_alert=True)
+        return
+
+    await db.cancel_pending_payments_for_order(order_id)
+    await db.cancel_order(order_id)
+
+    await call.message.edit_text(
+        "❌ Заказ отменён.\n\nМожешь оформить заново и выбрать другой способ оплаты.",
+        reply_markup=None,
+    )
+    await call.answer("Отменено")

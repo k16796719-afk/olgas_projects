@@ -16,9 +16,9 @@ def back_menu_kb() -> InlineKeyboardMarkup:
 
 def lang_goal_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Жизнь за границей", callback_data="lg_goal:abroad")],
-        [InlineKeyboardButton(text="Школа", callback_data="lg_goal:school")],
-        [InlineKeyboardButton(text="Путешествия", callback_data="lg_goal:travel")],
+        [InlineKeyboardButton(text="🌍 Жизнь за границей", callback_data="lg_goal:abroad")],
+        [InlineKeyboardButton(text="📝 Школа", callback_data="lg_goal:school")],
+        [InlineKeyboardButton(text="✈️ Путешествия", callback_data="lg_goal:travel")],
         [InlineKeyboardButton(text="Другое", callback_data="lg_goal:other")],
         [InlineKeyboardButton(text="⬅️ В меню", callback_data="menu")],
     ])
@@ -51,7 +51,7 @@ def lang_product_kb(cfg, direction: str) -> InlineKeyboardMarkup:
         trial = p.trial_rub
         single = p.en_lesson_rub
         pack10 = p.en_pack10_rub
-        flag = "🇬🇧"
+        flag = "🇺🇸"
     else:  # китайский
         trial = p.trial_china_rub
         single = p.china_lesson_rub
@@ -72,7 +72,7 @@ def yoga_plan_kb(cfg) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=f"4 практики /месяц - {p.yoga_4_rub}₽", callback_data="y_plan:yoga_4")],
         [InlineKeyboardButton(text=f"8 практик /месяц - {p.yoga_8_rub}₽", callback_data="y_plan:yoga_8")],
-        [InlineKeyboardButton(text=f"Индивидуально 1-1 10 практик /месяц - {p.yoga_10ind_rub}₽", callback_data="y_plan:yoga_10_individual")],
+        [InlineKeyboardButton(text=f"1-1 10 практик /месяц - {p.yoga_10ind_rub}₽", callback_data="y_plan:yoga_10_individual")],
         [InlineKeyboardButton(text="⬅️ В меню", callback_data="menu")],
     ])
 
@@ -133,3 +133,11 @@ def admin_approve_kb(payment_id: int) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="❌ Отклонить", callback_data=f"adm_no:{payment_id}"),
         ]
     ])
+
+def payment_wait_kb(order_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔁 Изменить способ оплаты", callback_data=f"pay_change:{order_id}")],
+        [InlineKeyboardButton(text="❌ Отменить заказ", callback_data=f"order_cancel:{order_id}")],
+        [InlineKeyboardButton(text="⬅️ В меню", callback_data="menu")],
+    ])
+

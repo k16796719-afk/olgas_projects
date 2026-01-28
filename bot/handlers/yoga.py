@@ -28,7 +28,7 @@ async def yoga_plan(call: CallbackQuery, state: FSMContext, cfg):
         title = "Йога: 8 практик / месяц"
     else:
         amount = cfg.prices.yoga_10ind_rub
-        title = "Йога: индивидуально 1-1 10 практик / месяц"
+        title = "Йога: 1-1 10 практик / месяц"
     await state.update_data(yoga_plan=plan, product_title=title, amount=amount)
     await state.set_state(YogaFlow.payment)
     await call.message.edit_text(

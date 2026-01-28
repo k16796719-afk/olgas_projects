@@ -195,3 +195,16 @@ class Database:
             "UPDATE channel_access_log SET revoked_at=NOW() WHERE user_id=$1 AND channel_key=$2 AND revoked_at IS NULL",
             user_id, channel_key
         )
+# db.py
+
+    async def cancel_order(self, order_id: int) -> None:
+        await self.execute(
+            "UPDATE orders SET status='cancelled' WHERE id=$1 AND status IN ('pending','created')",
+            order_id
+        )
+
+    async def cancel_pending_payments_for_order(self, order_id: int) -> None:
+        await self.execute(
+            "UPDATE payments SET status='cancelled' WHERE order_id=$1 AND status='pending'",
+            order_id
+        )

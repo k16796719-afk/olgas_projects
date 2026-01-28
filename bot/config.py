@@ -61,12 +61,16 @@ class Config:
     sweeper_hour: int
     sweeper_minute: int
 
+    olga_telegram: str
+
 def load_config() -> Config:
     bot_token = _getenv("BOT_TOKEN")
     admin_ids = _parse_int_list(_getenv("ADMIN_IDS"))
     database_url = _getenv("DATABASE_PUBLIC_URL")
     env = os.getenv("ENV", "prod")
     tz = os.getenv("TZ", "America/Sao_Paulo")
+
+    olga_telegram = _getenv_opt("OLGA_TG_USERNAME")
 
     channel_personal_id = int(_getenv("CHANNEL_PERSONAL_ID"))
     yoga_channel_4_id = int(_getenv("YOGA_CHANNEL_4_ID"))
@@ -122,6 +126,7 @@ def load_config() -> Config:
         sweeper_hour=sweeper_hour,
         sweeper_minute=sweeper_minute,
         pay_rub_card_owner=pay_rub_card_owner,
+        olga_telegram=olga_telegram
     )
 
 import os
