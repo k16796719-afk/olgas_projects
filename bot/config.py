@@ -79,7 +79,7 @@ def load_config() -> Config:
     yoga_personal_channel_id = int(ypc) if ypc else None
 
     pay_rub_card_details = _getenv("PAY_RUB_CARD_DETAILS")
-    pay_rub_card_owner = _getenv_opt("PAY_RUB_CARD_OWNER", "Табакаева О.А")
+    pay_rub_card_owner = _getenv_opt("PAY_RUB_CARD_OWNER", "Табакаева О.А.")
     pay_pix_key = _getenv("PAY_PIX_KEY")
     pay_pix_receiver_name = _getenv("PAY_PIX_RECEIVER_NAME")
     pay_crypto_network = _getenv("PAY_CRYPTO_NETWORK")

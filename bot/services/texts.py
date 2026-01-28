@@ -98,26 +98,30 @@ def format_order_card(
 def payment_instructions(method: str, currency: str, cfg) -> str:
     if method == "rub_card":
         owner_line = ""
-        if cfg.pay_rub_card_owner:
-            owner_line = f"\n👤 <b>Владелец карты:</b> {cfg.pay_rub_card_owner}"
+        if getattr(cfg, "pay_rub_card_owner", None):
+            owner_line = f"\n<b>Владелец карты:</b> {cfg.pay_rub_card_owner}"
+
         return (
-            "💳 *Оплата переводом на карту (RUB)*\n\n"
-            f"{cfg.pay_rub_card_details}\n\n"
+            "💳 <b>Оплата переводом на карту (RUB)</b>\n\n"
+            f"<code>{cfg.pay_rub_card_details}</code>"
             f"{owner_line}\n\n"
-            "После оплаты *пришли сюда скриншот/чек (только JPG)*."
+            "После оплаты <b>пришли сюда скриншот/чек</b> (только JPG)."
         )
+
     if method == "pix":
         return (
-            "🇧🇷 *Оплата Pix*\n\n"
-            f"Chave Pix: `{cfg.pay_pix_key}`\n"
-            f"*{cfg.pay_pix_receiver_name}*\n\n"
-            "После оплаты *пришли сюда скриншот/чек (только JPG)*."
+            "🇧🇷 <b>Оплата Pix</b>\n\n"
+            f"<b>Chave Pix:</b> <code>{cfg.pay_pix_key}</code>\n"
+            f"<b>Получатель:</b> {cfg.pay_pix_receiver_name}\n\n"
+            "После оплаты <b>пришли сюда скриншот/чек</b> (только JPG)."
         )
+
     if method == "crypto":
         return (
-            "🪙 *Оплата криптой*\n\n"
-            f"Сеть: *{cfg.pay_crypto_network}*\n"
-            f"Кошелек: `{cfg.pay_crypto_wallet}`\n\n"
-            "После оплаты *пришли сюда скриншот/чек (только JPG)*."
+            "🪙 <b>Оплата криптовалютой</b>\n\n"
+            f"<b>Сеть:</b> {cfg.pay_crypto_network}\n"
+            f"<b>Кошелёк:</b> <code>{cfg.pay_crypto_wallet}</code>\n\n"
+            "После оплаты <b>пришли сюда скриншот/чек</b> (только JPG)."
         )
-    return "Оплата: неизвестный метод."
+
+    return "❌ Неизвестный способ оплаты."
