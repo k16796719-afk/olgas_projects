@@ -1,4 +1,6 @@
 from aiogram import Router
+from aiogram.types import CallbackQuery
+
 from bot.handlers.start_menu import router as start_router
 from bot.handlers.languages import router as lang_router
 from bot.handlers.yoga import router as yoga_router
@@ -9,6 +11,13 @@ from bot.handlers.admin import router as admin_router
 from bot.handlers.yoga_feedback.handlers import router as yoga_feedback_router
 
 router = Router()
+
+
+@router.callback_query()
+async def _debug_all_callbacks(q: CallbackQuery):
+    print("RAW CALLBACK DATA:", q.data)
+    await q.answer()
+
 router.include_router(start_router)
 router.include_router(yoga_feedback_router)
 router.include_router(lang_router)
