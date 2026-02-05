@@ -16,6 +16,13 @@ from bot.config import load_config
 router = Router()
 
 
+@router.callback_query()
+async def yf_debug_any(q: CallbackQuery):
+    print("YOGA_FEEDBACK ROUTER GOT:", q.data)
+    await q.answer("yf ok")
+
+
+
 # ---------- helpers ----------
 
 def _q_text(n: int) -> str:
