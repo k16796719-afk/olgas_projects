@@ -16,12 +16,6 @@ from bot.config import load_config
 router = Router()
 
 
-@router.callback_query()
-async def yf_debug_any(q: CallbackQuery):
-    print("YOGA_FEEDBACK ROUTER GOT:", q.data)
-    await q.answer("yf ok")
-
-
 
 # ---------- helpers ----------
 
@@ -122,24 +116,12 @@ async def feedback_test(message: Message, state: FSMContext):
 
 # ---------- callbacks ----------
 
+
 @router.callback_query(YF.filter(), F.action == "start")
 async def cb_start(query: CallbackQuery, callback_data: YF, state: FSMContext, repos):
-    print("DEBUG start v=", callback_data.v)
-    print("CB_START HIT", callback_data)
-
-    subscription_id = int(callback_data.v)
-    if subscription_id <= 0:
-        await query.answer("Опрос недоступен", show_alert=True)
-        return
-
-    user_id = query.from_user.id
-    await state.update_data(user_id=user_id, subscription_id=subscription_id, q6_selected=[])
-
-    await repos.yoga_feedback.upsert_blank(user_id, subscription_id)
-
+    print("CB_START HIT:", callback_data)
     await query.answer()
     await _ask_q(query.message, 1, state)
-
 
 @router.callback_query(YF.filter(), F.action == "skip")
 async def cb_skip(query: CallbackQuery, callback_data: YF, state: FSMContext):
