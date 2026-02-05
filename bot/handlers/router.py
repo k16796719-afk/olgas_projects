@@ -10,10 +10,10 @@ from bot.handlers.yoga_feedback.handlers import router as yoga_feedback_router
 
 router = Router()
 router.include_router(start_router)
+router.include_router(yoga_feedback_router)
 router.include_router(lang_router)
 router.include_router(yoga_router)
 router.include_router(astro_router)
-router.include_router(yoga_feedback_router)
 router.include_router(mentor_router)
 router.include_router(pay_router)
 router.include_router(admin_router)

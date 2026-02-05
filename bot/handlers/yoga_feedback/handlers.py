@@ -103,33 +103,30 @@ async def _finish(
 
 @router.message(F.text == "/feedback_test")
 async def feedback_test(message: Message, state: FSMContext):
+    test_sub_id = 999
+
     await message.answer(
         SURVEY_INTRO_TEXT,
-        reply_markup=kb_start_survey(subscription_id=0).as_markup(),
+        reply_markup=kb_start_survey(test_sub_id).as_markup(),
     )
-    await state.update_data(user_id=message.from_user.id, subscription_id=0)
+    await state.update_data(user_id=message.from_user.id, subscription_id=test_sub_id)
+
 
 
 # ---------- callbacks ----------
 
 @router.callback_query(YF.filter(), F.action == "start")
-async def cb_start(
-    query: CallbackQuery,
-    callback_data: YF,
-    state: FSMContext,
-    repos,
-):
+async def cb_start(query: CallbackQuery, callback_data: YF, state: FSMContext, repos):
+    print("DEBUG start v=", callback_data.v)
+    print("CB_START HIT", callback_data)
+
     subscription_id = int(callback_data.v)
+    if subscription_id <= 0:
+        await query.answer("Опрос недоступен", show_alert=True)
+        return
+
     user_id = query.from_user.id
-
-    print("CALLBACK_DATA:", callback_data)
-    print("V:", callback_data.v)
-
-    await state.update_data(
-        user_id=user_id,
-        subscription_id=subscription_id,
-        q6_selected=[],
-    )
+    await state.update_data(user_id=user_id, subscription_id=subscription_id, q6_selected=[])
 
     await repos.yoga_feedback.upsert_blank(user_id, subscription_id)
 

@@ -72,7 +72,7 @@ async def run_feedback_job(message: Message, db, cfg):
     await send_yoga_feedback_surveys(bot=message.bot, db=db, cfg=cfg)
     await message.answer("job executed")
 
-@router.callback_query()
-async def debug_any_callback(q: CallbackQuery):
-    print("DEBUG CALLBACK:", q.data)
-    await q.answer("ok")
+# @router.callback_query()
+# async def debug_any_callback(q: CallbackQuery):
+#     print("DEBUG CALLBACK:", q.data)
+#     await q.answer("ok")
