@@ -53,7 +53,7 @@ async def main():
 
     log.info("Bot started")
     try:
-        await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+        await dp.start_polling(bot)
     finally:
         log.info("Shutting down")
         await db.close()
