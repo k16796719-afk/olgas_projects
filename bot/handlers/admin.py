@@ -1,17 +1,15 @@
 from __future__ import annotations
 
 import html
-from datetime import datetime, timedelta, timezone
 
 from aiogram import Router
+from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
 from bot.constants import (
-    D_ENGLISH, D_CHINESE, D_YOGA, D_ASTRO, D_MENTOR,
-    YOGA_4, YOGA_8, YOGA_10IND
+    D_YOGA
 )
 from bot.services.access import create_invite_link
-from bot.keyboards import main_menu_kb
 
 router = Router()
 
@@ -52,7 +50,7 @@ async def _grant_access(bot, db, cfg, *, tg_user_id: int, user_db_id: int, direc
     return links
 
 @router.callback_query(lambda c: c.data.startswith("adm_ok:"))
-async def admin_approve(call: CallbackQuery, db, cfg, bot):
+async def admin_approve(call: CallbackQuery, db, cfg, bot, state: FSMContext):
     if not _is_admin(call.from_user.id, cfg):
         await call.answer("Нет доступа", show_alert=True)
         return
@@ -70,7 +68,6 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
 
     order = await db.get_order(pay["order_id"])
     direction = order["direction"]
-    payload = order["payload_json"]
 
     # resolve user
     # order.user_id -> users.tg_user_id
@@ -115,6 +112,15 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
     payload = order["payload_json"]
 
     if direction == "yoga":
+
+        WELCOME_YOGA_TEXT = (
+            "Добро пожаловать 🤍\n\n"
+            "💰 <b>Оплата прошла успешно</b> — вы в закрытой группе йога-практик 🧘‍♀️\n\n"
+            "🫶🏼 Здесь вас ждёт регулярная поддержка, мягкая работа с телом и состоянием, "
+            "а главное — пространство для себя без спешки и давления.\n\n"
+            "✅ Все анонсы практик, ссылки и важная информация будут появляться в группе."
+        )
+
         plan = _extract_yoga_plan(payload)
         channel_id = None
         if plan == 4:
@@ -130,17 +136,63 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
                 expire_date=datetime.utcnow() + timedelta(days=2),
             )
 
+            access_expires_at = datetime.utcnow() + timedelta(days=30)
+
+            is_first = await db.is_first_yoga_subscription(user_db_id)
+
+            # создать подписку (yoga_4 / yoga_8)
+            product = f"yoga_{plan}"
+            await db.create_yoga_subscription(
+                user_id=user_db_id,
+                product=product,
+                expires_at=access_expires_at,
+                last_payment_id=payment_id,
+                channel_id=int(channel_id),
+            )
+
             await bot.send_message(
                 chat_id=tg_user_id,
                 text=(
                     "✅ <b>Оплата подтверждена</b>\n\n"
                     f"🧘 Ваш тариф: <b>{plan} занятий/мес</b>\n"
+                    f"📅 Доступ активен до: <b>{access_expires_at:%d.%m.%Y}</b>\n\n"
                     "Вот ссылка для входа в закрытый канал:\n\n"
                     f"🔗 {invite.invite_link}\n\n"
                     f"Если ссылка не открывается — напишите Ольге {cfg.olga_telegram}."
                 ),
                 parse_mode="HTML",
             )
+
+            # отправляем приветствие
+            await bot.send_message(
+                tg_user_id,
+                WELCOME_YOGA_TEXT,
+                parse_mode="HTML",
+            )
+
+            ONBOARDING_TEXT = (
+                "Немного о формате 📝\n\n"
+                "▫️ Практики проходят регулярно в этой группе\n"
+                "▫️ Все записи сохраняются\n"
+                "▫️ Можно заниматься в удобное время\n\n"
+                "⏳ Доступ: <b>в течение 1 месяца</b>\n\n"
+                "<b>Варианты участия:</b>\n"
+                "▪️ 4 практики в месяц\n"
+                "▪️ 8 практик в месяц\n"
+                "▪️ Индивидуальный формат 1-1 (персональная работа, запрос под вас)\n\n"
+                "Сегодня — знакомимся!\n"
+                "Напишите, пожалуйста:\n"
+                "1️⃣ Имя\n"
+                "2️⃣ Из какого города/страны\n"
+                "3️⃣ Как вы чувствуете своё тело сейчас? Занимались ли вы йогой раньше?"
+            )
+
+            if is_first:
+                await bot.send_message(tg_user_id, ONBOARDING_TEXT, parse_mode="HTML")
+                await state.update_data(yoga_intro_plan=plan, yoga_intro_payment_id=payment_id)
+                await state.set_state("WAIT_YOGA_INTRO")
+
+
         else:
             # if we can't detect plan, don't crash
             await bot.send_message(

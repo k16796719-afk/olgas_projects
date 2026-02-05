@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS payments (
   method TEXT NOT NULL, -- rub_card/pix/crypto
   currency TEXT NOT NULL, -- RUB/BRL/USDT
   amount INTEGER NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending', -- pending/proof_submitted/paid/rejected
+  status TEXT NOT NULL DEFAULT 'pending', -- pending/proof_submitted/paid/rejected/cancelled
   proof_file_id TEXT,
   admin_id_approved BIGINT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -57,6 +57,49 @@ CREATE TABLE IF NOT EXISTS channel_access_log (
 
 CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_expires ON subscriptions(expires_at);
+
+ALTER TABLE subscriptions
+  ADD COLUMN IF NOT EXISTS channel_id BIGINT,
+  ADD COLUMN IF NOT EXISTS joined_at TIMESTAMPTZ DEFAULT NOW();
+
+CREATE INDEX IF NOT EXISTS idx_subscriptions_expires_at
+  ON subscriptions(expires_at);
+
+CREATE INDEX IF NOT EXISTS idx_subscriptions_channel_id
+  ON subscriptions(channel_id);
+  
+  ALTER TABLE subscriptions
+  ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
+
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status
+  ON subscriptions(status);
+  
+ALTER TABLE subscriptions
+ADD COLUMN IF NOT EXISTS feedback_sent_at TIMESTAMPTZ;
+
+CREATE TABLE IF NOT EXISTS yoga_feedback (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  subscription_id BIGINT NOT NULL,
+
+  q1_difficulty TEXT,
+  q2_pace TEXT,
+  q3_state TEXT,
+  q4_format TEXT,
+  q5_frequency TEXT,
+  q6_preferences TEXT[],  -- мультивыбор
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  UNIQUE(user_id, subscription_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_yoga_feedback_user_sub
+ON yoga_feedback(user_id, subscription_id);
+
+
+
 """
 
 class Database:
@@ -165,10 +208,22 @@ class Database:
         return row is not None
 
     # Subscriptions (Yoga)
-    async def create_yoga_subscription(self, user_id: int, product: str, expires_at, last_payment_id: int) -> int:
+    # Subscriptions (Yoga)
+    async def create_yoga_subscription(
+            self,
+            user_id: int,
+            product: str,
+            expires_at,
+            last_payment_id: int,
+            channel_id: int,
+    ) -> int:
         row = await self.fetchrow(
-            "INSERT INTO subscriptions(user_id, product, expires_at, last_payment_id) VALUES($1,$2,$3,$4) RETURNING id",
-            user_id, product, expires_at, last_payment_id
+            """
+            INSERT INTO subscriptions(user_id, product, expires_at, last_payment_id, channel_id)
+            VALUES($1,$2,$3,$4,$5)
+            RETURNING id
+            """,
+            user_id, product, expires_at, last_payment_id, channel_id
         )
         return int(row["id"])
 
@@ -180,6 +235,21 @@ class Database:
         WHERE s.status='active' AND s.expires_at <= NOW()
         """
         return [dict(r) for r in await self.fetch(q)]
+
+    async def get_expired_yoga_subscriptions(self, now):
+        return await self.fetch(
+            """
+            SELECT s.id, s.channel_id, u.tg_user_id
+            FROM subscriptions s
+            JOIN users u ON u.id = s.user_id
+            WHERE s.product LIKE 'yoga_%'
+              AND s.expires_at <= $1
+              AND (s.status IS NULL OR s.status = 'active')
+              AND s.channel_id IS NOT NULL
+            """,
+            now
+        )
+
 
     async def mark_subscription_expired(self, sub_id: int):
         await self.execute("UPDATE subscriptions SET status='expired' WHERE id=$1", sub_id)
@@ -198,15 +268,17 @@ class Database:
 # db.py
 
     async def cancel_order(self, order_id: int) -> None:
+        # Orders in this project use: draft/awaiting_payment/paid/cancelled
         await self.execute(
-            "UPDATE orders SET status='cancelled' WHERE id=$1 AND status IN ('pending','created')",
-            order_id
+            "UPDATE orders SET status='cancelled' WHERE id=$1 AND status IN ('draft','awaiting_payment')",
+            order_id,
         )
 
     async def cancel_pending_payments_for_order(self, order_id: int) -> None:
+        # Payments in this project use: pending/proof_submitted/paid/rejected/cancelled
         await self.execute(
-            "UPDATE payments SET status='cancelled' WHERE order_id=$1 AND status='pending'",
-            order_id
+            "UPDATE payments SET status='cancelled' WHERE order_id=$1 AND status IN ('pending','proof_submitted')",
+            order_id,
         )
 
     async def get_user_id_by_tg(self, tg_user_id: int) -> int | None:
@@ -217,3 +289,11 @@ class Database:
         if not row:
             return None
         return int(row["id"])
+
+    # db.py
+    async def is_first_yoga_subscription(self, user_id: int) -> bool:
+        row = await self.fetchrow(
+            "SELECT 1 FROM subscriptions WHERE user_id=$1 AND product LIKE 'yoga_%' LIMIT 1",
+            user_id
+        )
+        return row is None

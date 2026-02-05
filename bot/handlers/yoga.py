@@ -2,6 +2,8 @@ from __future__ import annotations
 from aiogram import Router
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
+from aiogram.types import Message
+
 
 from bot.states import YogaFlow
 from bot.keyboards import yoga_plan_kb, payment_method_kb
@@ -36,3 +38,38 @@ async def yoga_plan(call: CallbackQuery, state: FSMContext, cfg):
         reply_markup=payment_method_kb("yoga")
     )
     await call.answer()
+
+@router.message(lambda m: m.text is not None)
+async def yoga_intro_catcher(message: Message, state: FSMContext, db, cfg, bot):
+    if message.chat.type != "private":
+        return
+
+    if (await state.get_state()) != "WAIT_YOGA_INTRO":
+        return
+
+    data = await state.get_data()
+    plan = data.get("yoga_intro_plan")
+    payment_id = data.get("yoga_intro_payment_id")
+
+    u = message.from_user
+    user_line = u.full_name + (f" (@{u.username})" if u.username else "")
+
+    text_to_admins = (
+        "🧘‍♀️ <b>Йога: ответы на знакомство</b>\n"
+        f"👤 <b>Пользователь:</b> {user_line}\n"
+        f"🧾 <b>Тариф:</b> {plan} занятий/мес\n"
+        f"🧾 <b>Payment ID:</b> {payment_id}\n\n"
+        f"📝 <b>Ответ:</b>\n{message.text}"
+    )
+
+    # отправляем всем админам
+    for admin_id in cfg.admin_ids:
+        try:
+            await bot.send_message(admin_id, text_to_admins, parse_mode="HTML")
+        except Exception:
+            # не падаем из-за одного админа
+            pass
+
+    await message.answer("Спасибо! Я передала ваши ответы Ольге 🤍")
+    await state.clear()
+
