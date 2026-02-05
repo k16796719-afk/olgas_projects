@@ -16,7 +16,6 @@ from bot.config import load_config
 router = Router()
 
 
-
 # ---------- helpers ----------
 
 def _q_text(n: int) -> str:
@@ -35,23 +34,18 @@ async def _ask_q(message, n: int, state: FSMContext):
     if n == 1:
         await state.set_state(YogaSurvey.q1)
         await message.answer(_q_text(1), reply_markup=kb_single_choice(1, Q1).as_markup())
-
     elif n == 2:
         await state.set_state(YogaSurvey.q2)
         await message.answer(_q_text(2), reply_markup=kb_single_choice(2, Q2).as_markup())
-
     elif n == 3:
         await state.set_state(YogaSurvey.q3)
         await message.answer(_q_text(3), reply_markup=kb_single_choice(3, Q3).as_markup())
-
     elif n == 4:
         await state.set_state(YogaSurvey.q4)
         await message.answer(_q_text(4), reply_markup=kb_single_choice(4, Q4).as_markup())
-
     elif n == 5:
         await state.set_state(YogaSurvey.q5)
         await message.answer(_q_text(5), reply_markup=kb_single_choice(5, Q5).as_markup())
-
     elif n == 6:
         await state.set_state(YogaSurvey.q6)
         data = await state.get_data()
@@ -105,7 +99,6 @@ async def _finish(
 @router.message(F.text == "/feedback_test")
 async def feedback_test(message: Message, state: FSMContext):
     test_sub_id = 999
-
     await message.answer(
         SURVEY_INTRO_TEXT,
         reply_markup=kb_start_survey(test_sub_id).as_markup(),
@@ -113,21 +106,36 @@ async def feedback_test(message: Message, state: FSMContext):
     await state.update_data(user_id=message.from_user.id, subscription_id=test_sub_id)
 
 
-
 # ---------- callbacks ----------
 
-
 @router.callback_query(YF.filter(), F.action == "start")
-async def cb_start(query: CallbackQuery, callback_data: YF, state: FSMContext, repos):
-    print("CB_START HIT:", callback_data)
+async def cb_start(
+    query: CallbackQuery,
+    callback_data: YF,
+    state: FSMContext,
+    yf_repo: YogaFeedbackRepo,
+):
     await query.answer()
+
+    subscription_id = int(callback_data.v)
+    user_id = query.from_user.id
+
+    await state.update_data(
+        user_id=user_id,
+        subscription_id=subscription_id,
+        q6_selected=[],
+    )
+
+    # создаём/обнуляем запись под эту подписку
+    await yf_repo.upsert_blank(user_id, subscription_id)
+
     await _ask_q(query.message, 1, state)
+
 
 @router.callback_query(YF.filter(), F.action == "skip")
 async def cb_skip(query: CallbackQuery, callback_data: YF, state: FSMContext):
     await query.answer()
     next_q = callback_data.q + 1
-
     if next_q <= 6:
         await _ask_q(query.message, next_q, state)
 
@@ -214,4 +222,11 @@ async def cb_done_q6(
 @router.callback_query(YF.filter(), F.action == "renew")
 async def cb_renew(query: CallbackQuery):
     await query.answer()
-    await payment_method_kb("yoga")
+
+    kb = payment_method_kb("yoga")
+    reply_markup = kb.as_markup() if hasattr(kb, "as_markup") else kb
+
+    await query.message.answer(
+        "Для продления участия выберите способ оплаты:",
+        reply_markup=reply_markup,
+    )
