@@ -115,6 +115,7 @@ async def cb_start(
     state: FSMContext,
     yf_repo: YogaFeedbackRepo,
 ):
+    print("CB_START HIT:", callback_data)
     await query.answer()
 
     subscription_id = int(callback_data.v)
