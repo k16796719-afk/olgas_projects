@@ -13,10 +13,10 @@ from bot.handlers.yoga_feedback.handlers import router as yoga_feedback_router
 router = Router()
 
 
-@router.callback_query()
-async def _debug_all_callbacks(q: CallbackQuery):
-    print("RAW CALLBACK DATA:", q.data)
-    await q.answer()
+# @router.callback_query()
+# async def _debug_all_callbacks(q: CallbackQuery):
+#     print("RAW CALLBACK DATA:", q.data)
+#     await q.answer()
 
 router.include_router(start_router)
 router.include_router(yoga_feedback_router)
