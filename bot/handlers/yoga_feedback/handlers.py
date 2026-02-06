@@ -18,9 +18,6 @@ router = Router()
 
 # ---------- helpers ----------
 
-def _repo(query: CallbackQuery) -> YogaFeedbackRepo:
-    db = query.bot["db"]
-    return YogaFeedbackRepo(db)
 
 
 def _q_text(n: int) -> str:
@@ -114,11 +111,11 @@ async def feedback_test(message: Message, state: FSMContext):
 # ---------- callbacks ----------
 
 @router.callback_query(YF.filter(), F.action == "start")
-async def cb_start(query: CallbackQuery, callback_data: YF, state: FSMContext):
+async def cb_start(query: CallbackQuery, callback_data: YF, state: FSMContext, db):
     print("CB_START HIT:", callback_data)
     await query.answer()
 
-    yf_repo = _repo(query)
+    yf_repo = YogaFeedbackRepo(db)
 
     subscription_id = int(callback_data.v)
     user_id = query.from_user.id
@@ -147,9 +144,10 @@ async def cb_answer_single(
     query: CallbackQuery,
     callback_data: YF,
     state: FSMContext,
-    yf_repo: YogaFeedbackRepo,
+    db,
 ):
     await query.answer()
+    yf_repo = YogaFeedbackRepo(db)
     data = await state.get_data()
 
     field_map = {
@@ -183,6 +181,7 @@ async def cb_toggle_q6(
     state: FSMContext,
 ):
     await query.answer()
+    yf_repo = YogaFeedbackRepo(db)
     data = await state.get_data()
     selected = set(data.get("q6_selected", []))
 
@@ -201,9 +200,10 @@ async def cb_toggle_q6(
 async def cb_done_q6(
     query: CallbackQuery,
     state: FSMContext,
-    yf_repo: YogaFeedbackRepo,
+    db,
 ):
     await query.answer()
+    yf_repo = YogaFeedbackRepo(db)
     data = await state.get_data()
 
     await yf_repo.set_answer(
