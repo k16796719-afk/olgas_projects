@@ -7,7 +7,7 @@ def main_menu_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="🧘‍♀️ Йога", callback_data="dir:yoga")],
         [InlineKeyboardButton(text="✨ Астрология", callback_data="dir:astrology")],
         [InlineKeyboardButton(text="🧠 Менторство", callback_data="dir:mentoring")],
-        [InlineKeyboardButton(text="🧪 Тестовый опрос", callback_data="yoga_feedback:start")],
+        [InlineKeyboardButton(text="🧪 Тестовый опрос", callback_data="yoga_feedback_start")],
     ])
 
 def back_menu_kb() -> InlineKeyboardMarkup:
