@@ -18,6 +18,11 @@ router = Router()
 
 # ---------- helpers ----------
 
+def _repo(query: CallbackQuery) -> YogaFeedbackRepo:
+    db = query.bot["db"]
+    return YogaFeedbackRepo(db)
+
+
 def _q_text(n: int) -> str:
     return {
         1: "1️⃣ Насколько сложные были практики?",
@@ -109,14 +114,11 @@ async def feedback_test(message: Message, state: FSMContext):
 # ---------- callbacks ----------
 
 @router.callback_query(YF.filter(), F.action == "start")
-async def cb_start(
-    query: CallbackQuery,
-    callback_data: YF,
-    state: FSMContext,
-    yf_repo: YogaFeedbackRepo,
-):
+async def cb_start(query: CallbackQuery, callback_data: YF, state: FSMContext):
     print("CB_START HIT:", callback_data)
     await query.answer()
+
+    yf_repo = _repo(query)
 
     subscription_id = int(callback_data.v)
     user_id = query.from_user.id
@@ -127,10 +129,9 @@ async def cb_start(
         q6_selected=[],
     )
 
-    # создаём/обнуляем запись под эту подписку
     await yf_repo.upsert_blank(user_id, subscription_id)
-
     await _ask_q(query.message, 1, state)
+
 
 
 @router.callback_query(YF.filter(), F.action == "skip")
