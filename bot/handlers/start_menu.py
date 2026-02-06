@@ -3,9 +3,7 @@ from aiogram import Router
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 
-from bot.handlers.yoga_feedback.constants import SURVEY_INTRO_TEXT
-from bot.handlers.yoga_feedback.keyboards import kb_start_survey
-from bot.keyboards import main_menu_kb
+from bot.keyboards.keyboards import main_menu_kb
 
 router = Router()
 
@@ -57,22 +55,3 @@ async def cb_menu(call: CallbackQuery):
         "Я задам пару вопросов и подберу формат взаимодейтсвия для тебя ✨", reply_markup=main_menu_kb())
     await call.answer()
 
-
-
-@router.message(Command("feedback_test"))
-async def feedback_test(message: Message):
-    await message.answer(
-        SURVEY_INTRO_TEXT,
-        reply_markup=kb_start_survey(999).as_markup()
-    )
-
-@router.message(Command("run_feedback_job"))
-async def run_feedback_job(message: Message, db, cfg):
-    from bot.jobs import send_yoga_feedback_surveys
-    await send_yoga_feedback_surveys(bot=message.bot, db=db, cfg=cfg)
-    await message.answer("job executed")
-
-# @router.callback_query()
-# async def debug_any_callback(q: CallbackQuery):
-#     print("DEBUG CALLBACK:", q.data)
-#     await q.answer("ok")
