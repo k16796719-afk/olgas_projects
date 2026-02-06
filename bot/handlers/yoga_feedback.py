@@ -3,6 +3,8 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
+
+from bot.keyboards.keyboards import yoga_renew_kb, payment_method_kb
 from bot.states.yoga_feedback import YogaFeedback
 from bot.keyboards.yoga_feedback_kb import *
 
@@ -11,7 +13,7 @@ router = Router()
 START_TEXT = (
     "Наш месяц практик подходит к завершению 🤍\n"
     "Спасибо, что были в этом пространстве 🧘‍♀️\n\n"
-    "Ответьте, пожалуйста, на пару вопросов 📝"
+    "Ответьте, пожалуйста, на несколько вопросов 📝"
 )
 
 @router.callback_query(lambda c: c.data == "yoga_feedback_start")
@@ -76,8 +78,16 @@ async def finish(call: CallbackQuery, state: FSMContext, bot, cfg):
     await call.message.edit_text(
         "Спасибо за вашу обратную связь 🤍\n\n"
         "Если вы хотите продолжить — буду рада видеть вас в следующем месяце.\n\n"
-        "👉 Нажмите «Оплатить», чтобы продлить участие ✨"
-    )
+        "👉 Нажмите «Оплатить», чтобы продлить участие ✨", reply_markup=yoga_renew_kb())
 
     await state.clear()
+    await call.answer()
+
+@router.callback_query(lambda c: c.data == "yoga_renew")
+async def yoga_renew(call: CallbackQuery, state: FSMContext):
+    await state.update_data(direction="yoga")
+    await call.message.answer(
+        "Выберите способ оплаты:",
+        reply_markup=payment_method_kb(prefix="yoga_renew")
+    )
     await call.answer()

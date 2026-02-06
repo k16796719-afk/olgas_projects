@@ -142,3 +142,11 @@ def payment_wait_kb(order_id: int) -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="⬅️ В меню", callback_data="menu")],
     ])
 
+
+def yoga_renew_kb():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="💳 Оплатить продление",
+            callback_data="yoga_renew"
+        )]
+    ])
