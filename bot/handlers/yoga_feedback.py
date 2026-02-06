@@ -1,5 +1,6 @@
 # handlers/yoga_feedback.py
 from aiogram import Router
+from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
 from bot.states.yoga_feedback import YogaFeedback
@@ -13,7 +14,7 @@ START_TEXT = (
     "Ответьте, пожалуйста, на пару вопросов 📝"
 )
 
-@router.message(commands=["yoga_feedback_start"])
+@router.message(Command("yoga_feedback_start"))
 async def start_feedback(message: Message, state: FSMContext):
     await message.answer(START_TEXT)
     await message.answer("1️⃣ Насколько сложные были практики?", reply_markup=difficulty_kb)
