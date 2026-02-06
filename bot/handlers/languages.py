@@ -3,8 +3,8 @@ from aiogram import Router
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
-from bot.states import LangFlow
-from bot.keyboards import lang_goal_kb, lang_level_kb, lang_freq_kb, lang_product_kb, payment_method_kb
+from bot.states.states import LangFlow
+from bot.keyboards.keyboards import lang_goal_kb, lang_level_kb, lang_freq_kb, lang_product_kb, payment_method_kb
 from bot.constants import D_ENGLISH, D_CHINESE
 
 router = Router()
