@@ -14,6 +14,16 @@ START_TEXT = (
     "Ответьте, пожалуйста, на пару вопросов 📝"
 )
 
+@router.callback_query(lambda c: c.data == "yoga_feedback_start")
+async def start_feedback_cb(call: CallbackQuery, state: FSMContext):
+    await call.message.answer(START_TEXT)
+    await call.message.answer(
+        text="1️⃣ Насколько сложные были практики?",
+        reply_markup=difficulty_kb
+    )
+    await state.set_state(YogaFeedback.q1_difficulty)
+    await call.answer()
+
 @router.message(Command("yoga_feedback_start"))
 async def start_feedback(message: Message, state: FSMContext):
     await message.answer(START_TEXT)
