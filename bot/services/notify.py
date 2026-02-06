@@ -1,7 +1,7 @@
 from __future__ import annotations
 from aiogram import Bot
 from aiogram.types import InputMediaPhoto
-from bot.keyboards import admin_approve_kb
+from bot.keyboards.keyboards import admin_approve_kb
 
 async def notify_admins_with_proof(bot: Bot, admin_ids: list[int], text_md: str, proof_file_id: str, payment_id: int):
     # send photo/document if possible. Telegram stores photo/file_id.
