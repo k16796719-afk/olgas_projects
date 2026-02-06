@@ -3,8 +3,8 @@ from aiogram import Router
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
-from bot.states import AstroFlow
-from bot.keyboards import astrology_spheres_kb, astrology_format_kb, payment_method_kb
+from bot.states.states import AstroFlow
+from bot.keyboards.keyboards import astrology_spheres_kb, astrology_format_kb, payment_method_kb
 from bot.constants import D_ASTRO
 
 router = Router()

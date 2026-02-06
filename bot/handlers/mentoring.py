@@ -3,8 +3,8 @@ from aiogram import Router
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
-from bot.states import MentorFlow
-from bot.keyboards import mentoring_kb, payment_method_kb
+from bot.states.states import MentorFlow
+from bot.keyboards.keyboards import mentoring_kb, payment_method_kb
 from bot.constants import D_MENTOR
 
 router = Router()

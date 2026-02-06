@@ -5,8 +5,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 
-from bot.states import YogaFlow
-from bot.keyboards import yoga_plan_kb, payment_method_kb
+from bot.states.states import YogaFlow
+from bot.keyboards.keyboards import yoga_plan_kb, payment_method_kb
 from bot.constants import D_YOGA, YOGA_4, YOGA_8, YOGA_10IND
 
 router = Router()

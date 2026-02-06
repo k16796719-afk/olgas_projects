@@ -7,8 +7,8 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
 
-from bot.keyboards import payment_wait_kb, payment_method_kb
-from bot.states import LangFlow, YogaFlow, AstroFlow, MentorFlow
+from bot.keyboards.keyboards import payment_wait_kb, payment_method_kb
+from bot.states.states import LangFlow, YogaFlow, AstroFlow, MentorFlow
 from bot.services.texts import payment_instructions, format_order_card
 from bot.services.notify import notify_admins_with_proof
 from bot.constants import (
