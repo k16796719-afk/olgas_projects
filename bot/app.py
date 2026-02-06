@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from bot.config import load_config
 from bot.db import Database
 from bot.handlers import router as main_router
-from bot.jobs import add_jobs
+from bot.jobs.jobs import add_jobs
 
 log = logging.getLogger(__name__)
 
