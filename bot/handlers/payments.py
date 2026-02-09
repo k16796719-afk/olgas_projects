@@ -47,6 +47,10 @@ async def _ensure_user(db, message_or_call) -> int:
 async def pick_payment_method(call: CallbackQuery, state: FSMContext, db, cfg):
     # pay_m:<prefix>:<method>
     _, prefix, method = call.data.split(":", 2)
+
+    print("PAYMENT_METHOD")
+    print(method)
+
     if method not in ("rub_card", "pix", "crypto"):
         await call.answer("Неизвестный метод оплаты")
         return
