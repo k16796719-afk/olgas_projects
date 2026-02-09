@@ -9,6 +9,7 @@ class LangFlow(StatesGroup):
     wait_proof = State()
 
 class YogaFlow(StatesGroup):
+    wait_intro = State()
     plan = State()
     payment = State()
     wait_proof = State()
