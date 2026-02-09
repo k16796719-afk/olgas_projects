@@ -152,8 +152,8 @@ async def yoga_renew_change(call: CallbackQuery, state: FSMContext, cfg):
 async def yoga_renew_pick(call: CallbackQuery, state: FSMContext, cfg):
     _, product = call.data.split(":", 1)  # yoga_4 / yoga_8
 
-    price_map = {"yoga_4": cfg.prices.yoga_4_rub, "yoga_8": cfg.prices.yoga_8_rub, "yoga_ind": cfg.prices.yoga_10ind_rub}
-    title_map = {"yoga_4": "Йога 4 практики/мес", "yoga_8": "Йога 8 практик/мес", "yoga_ind": "Йога 1:1 10 практик/мес"}
+    price_map = {"yoga_4": cfg.prices.yoga_4_rub, "yoga_8": cfg.prices.yoga_8_rub, "yoga_10_individual": cfg.prices.yoga_10ind_rub}
+    title_map = {"yoga_4": "Йога 4 практики/мес", "yoga_8": "Йога 8 практик/мес", "yoga_10_individual": "Йога 1:1 10 практик/мес"}
 
     amount = int(price_map[product])
 
