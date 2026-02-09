@@ -113,13 +113,13 @@ async def yoga_renew_pay(call: CallbackQuery, state: FSMContext, db, cfg):
 
     await state.update_data(
         direction="yoga",
-        #flow="renew_same",
+        flow="renew_same",
         product=product,
         product_title=title_map.get(product, product),
         amount=amount,
     )
 
-    await call.message.answer("Выбери способ оплаты 💳", reply_markup=payment_method_kb(prefix=f"renew_same:{product}"))
+    await call.message.answer("Выбери способ оплаты 💳", reply_markup=payment_method_kb(prefix=product))
     await call.answer()
 
 
