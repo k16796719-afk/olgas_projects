@@ -113,7 +113,7 @@ async def yoga_renew_pay(call: CallbackQuery, state: FSMContext, db, cfg):
 
     await state.update_data(
         direction="yoga",
-        flow="renew_same",
+        #flow="renew_same",
         product=product,
         product_title=title_map.get(product, product),
         amount=amount,
