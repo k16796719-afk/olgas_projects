@@ -149,6 +149,8 @@ async def pick_payment_method(call: CallbackQuery, state: FSMContext, db, cfg):
         return
 
     # Валидация префикса
+    print("PREFFOX")
+    print(prefix)
     if prefix not in ALLOWED_PREFIXES:
         await call.answer("Ошибка: неверный тип продукта", show_alert=True)
         logger.warning(f"Unknown prefix: {prefix}")
