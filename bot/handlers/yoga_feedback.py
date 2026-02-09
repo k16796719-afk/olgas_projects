@@ -1,4 +1,6 @@
 # handlers/yoga_feedback.py
+from html import escape
+
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
@@ -62,18 +64,32 @@ async def q5(call: CallbackQuery, state: FSMContext):
 async def finish(call: CallbackQuery, state: FSMContext, bot, cfg):
     data = await state.get_data()
 
+    u = call.from_user
+    user_name = escape(u.full_name or "Без имени")
+    user_tag = f"@{u.username}" if u.username else "—"
+    user_id = u.id
+
     text = (
         "🧘‍♀️ <b>Йога — обратная связь</b>\n\n"
-        f"1. Сложность: {data.get('yf_q1')}\n"
-        f"2. Темп: {data.get('yf_q2')}\n"
-        f"3. После практик: {data.get('yf_q3')}\n"
-        f"4. Формат: {data.get('yf_q4')}\n"
-        f"5. Частота: {data.get('yf_q5')}\n"
-        f"6. Типы: {call.data.split(':')[1]}"
+        "👤 <b>От:</b>\n"
+        f"• Имя: <b>{user_name}</b>\n"
+        f"• Username: <b>{user_tag}</b>\n"
+        f"• ID: <code>{user_id}</code>\n\n"
+        "📋 <b>Ответы:</b>\n"
+        f"1️⃣ <b>Сложность:</b> {escape(str(data.get('yf_q1')))}\n"
+        f"2️⃣ <b>Темп:</b> {escape(str(data.get('yf_q2')))}\n"
+        f"3️⃣ <b>После практик:</b> {escape(str(data.get('yf_q3')))}\n"
+        f"4️⃣ <b>Формат:</b> {escape(str(data.get('yf_q4')))}\n"
+        f"5️⃣ <b>Частота:</b> {escape(str(data.get('yf_q5')))}\n"
+        f"6️⃣ <b>Типы практик:</b> {escape(call.data.split(':')[1])}\n"
     )
 
     for admin_id in cfg.admin_ids:
-        await bot.send_message(admin_id, text, parse_mode="HTML")
+        await bot.send_message(
+            chat_id=admin_id,
+            text=text,
+            parse_mode="HTML",
+        )
 
     await call.message.edit_text(
         "Спасибо за вашу обратную связь 🤍\n\n"
@@ -100,6 +116,7 @@ async def yoga_renew_pay(call: CallbackQuery, state: FSMContext, db, cfg):
     price_map = {
         "yoga_4": cfg.prices.yoga_4_rub,
         "yoga_8": cfg.prices.yoga_8_rub,
+        "yoga_ind": cfg.prices.yoga_10ind_rub,
     }
     amount = int(price_map.get(product, 0))
     if not amount:
@@ -109,6 +126,7 @@ async def yoga_renew_pay(call: CallbackQuery, state: FSMContext, db, cfg):
     title_map = {
         "yoga_4": "Йога 4 практики/мес",
         "yoga_8": "Йога 8 практик/мес",
+        "yoga_ind": "Йога 1:1 10 практик/мес",
     }
 
     await state.update_data(
@@ -134,8 +152,8 @@ async def yoga_renew_change(call: CallbackQuery, state: FSMContext, cfg):
 async def yoga_renew_pick(call: CallbackQuery, state: FSMContext, cfg):
     _, product = call.data.split(":", 1)  # yoga_4 / yoga_8
 
-    price_map = {"yoga_4": cfg.prices.yoga_4_rub, "yoga_8": cfg.prices.yoga_8_rub}
-    title_map = {"yoga_4": "Йога 4 практики/мес", "yoga_8": "Йога 8 практик/мес"}
+    price_map = {"yoga_4": cfg.prices.yoga_4_rub, "yoga_8": cfg.prices.yoga_8_rub, "yoga_ind": cfg.prices.yoga_10ind_rub}
+    title_map = {"yoga_4": "Йога 4 практики/мес", "yoga_8": "Йога 8 практик/мес", "yoga_ind": "Йога 1:1 10 практик/мес"}
 
     amount = int(price_map[product])
 

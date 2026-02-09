@@ -154,5 +154,7 @@ def yoga_change_plan_kb(cfg) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=f"🧘 4 практики — {cfg.prices.yoga_4_rub} RUB", callback_data="yoga_renew_pick:yoga_4")],
         [InlineKeyboardButton(text=f"🧘‍♀️ 8 практик — {cfg.prices.yoga_8_rub} RUB", callback_data="yoga_renew_pick:yoga_8")],
+        [InlineKeyboardButton(text=f"🧘‍♀️ 8 практик — {cfg.prices.yoga_8_rub} RUB", callback_data="yoga_renew_pick:yoga_8")],
+        [InlineKeyboardButton(text=f"1-1 10 практик /месяц - {cfg.prices.yoga_10ind_rub}₽", callback_data="y_plan:yoga_10_individual")],
         [InlineKeyboardButton(text="⬅️ Назад", callback_data="yoga_renew:back")],
     ])
