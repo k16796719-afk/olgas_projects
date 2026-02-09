@@ -165,5 +165,5 @@ async def yoga_renew_pick(call: CallbackQuery, state: FSMContext, cfg):
         amount=amount,
     )
 
-    await call.message.answer("Выбери способ оплаты 💳", reply_markup=payment_method_kb(prefix=f"renew_change:{product}"))
+    await call.message.answer("Выбери способ оплаты 💳", reply_markup=payment_method_kb(prefix=product))
     await call.answer()
