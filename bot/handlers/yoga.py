@@ -35,7 +35,8 @@ async def yoga_plan(call: CallbackQuery, state: FSMContext, cfg):
     await state.set_state(YogaFlow.payment)
     await call.message.edit_text(
         f"*{title}*\nСумма: *{amount}* RUB\n\nВыбери метод оплаты:",
-        reply_markup=payment_method_kb("yoga")
+        reply_markup=payment_method_kb("yoga"),
+        parse_mode="HTML"
     )
     await call.answer()
 

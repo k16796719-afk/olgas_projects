@@ -50,12 +50,17 @@ async def _grant_access(bot, db, cfg, *, tg_user_id: int, user_db_id: int, direc
     return links
 
 @router.callback_query(lambda c: c.data.startswith("adm_ok:"))
-async def admin_approve(call: CallbackQuery, db, cfg, bot, state: FSMContext):
+async def admin_approve(call: CallbackQuery, db, cfg, bot):
     if not _is_admin(call.from_user.id, cfg):
         await call.answer("Нет доступа", show_alert=True)
         return
 
-    payment_id = int(call.data.split(":",1)[1])
+    try:
+        payment_id = int(call.data.split(":", 1)[1])
+    except Exception:
+        await call.answer("Некорректный платеж", show_alert=True)
+        return
+
     pay = await db.get_payment(payment_id)
     if not pay:
         await call.answer("Платеж не найден", show_alert=True)
@@ -67,147 +72,194 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot, state: FSMContext):
     await db.approve_payment(payment_id, call.from_user.id)
 
     order = await db.get_order(pay["order_id"])
-    direction = order["direction"]
+    if not order:
+        await call.answer("Заказ не найден", show_alert=True)
+        return
 
-    # resolve user
-    # order.user_id -> users.tg_user_id
+    direction = order.get("direction")
+    payload = order.get("payload_json")
+
+    # resolve user: orders.user_id -> users.tg_user_id
     row = await db.fetchrow(
         "SELECT u.id as user_id, u.tg_user_id FROM orders o JOIN users u ON u.id=o.user_id WHERE o.id=$1",
-        order["id"]
+        order["id"],
     )
+    if not row:
+        await call.answer("Пользователь заказа не найден", show_alert=True)
+        return
+
     user_db_id = int(row["user_id"])
     tg_user_id = int(row["tg_user_id"])
 
     # mark order paid
     await db.set_order_status(order["id"], "paid")
 
-    from datetime import datetime, timedelta
     import json
+    import html
+    from datetime import datetime, timedelta, timezone
 
-    def _extract_yoga_plan(payload) -> int | None:
-        """
-        Returns 4 or 8 if can detect, else None.
-        """
-        if isinstance(payload, str):
+    def _to_payload_dict(v):
+        if isinstance(v, dict):
+            return v
+        if isinstance(v, str):
             try:
-                payload = json.loads(payload)
+                vv = json.loads(v)
+                if isinstance(vv, dict):
+                    return vv
             except Exception:
-                return None
-        if not isinstance(payload, dict):
-            return None
+                pass
+        return {}
 
-        # try several possible keys
-        for key in ("Тариф", "План", "Абонемент", "Yoga plan", "yoga_plan", "plan"):
-            v = payload.get(key)
-            if not v:
+    def _extract_yoga_plan(v):
+        """Return 4 or 8 if can detect, else None."""
+        d = _to_payload_dict(v)
+        for key in ("Тариф", "План", "Абонемент", "Yoga plan", "yoga_plan", "plan", "Продукт"):
+            raw = d.get(key)
+            if not raw:
                 continue
-            s = str(v).lower()
-            # detect 4 or 8
+            s = str(raw).lower()
             if "8" in s:
                 return 8
             if "4" in s:
                 return 4
         return None
 
-    payload = order["payload_json"]
+    def _fmt_date(dt: datetime) -> str:
+        return dt.astimezone(timezone.utc).strftime("%d.%m.%Y")
 
-    if direction == "yoga":
-
-        WELCOME_YOGA_TEXT = (
-            "Добро пожаловать 🤍\n\n"
-            "💰 <b>Оплата прошла успешно</b> — вы в закрытой группе йога-практик 🧘‍♀️\n\n"
-            "🫶🏼 Здесь вас ждёт регулярная поддержка, мягкая работа с телом и состоянием, "
-            "а главное — пространство для себя без спешки и давления.\n\n"
-            "✅ Все анонсы практик, ссылки и важная информация будут появляться в группе."
+    async def _get_active_yoga_sub(uid: int):
+        return await db.fetchrow(
+            "SELECT id, product, expires_at FROM subscriptions "
+            "WHERE user_id=$1 AND expires_at > NOW() "
+            "ORDER BY expires_at DESC LIMIT 1",
+            uid,
         )
 
+    async def _upsert_yoga_sub(uid: int, product: str, expires_at: datetime, last_payment_id: int):
+        sub = await _get_active_yoga_sub(uid)
+        if sub:
+            await db.execute(
+                "UPDATE subscriptions SET product=$2, expires_at=$3, last_payment_id=$4 WHERE id=$1",
+                int(sub["id"]),
+                product,
+                expires_at,
+                last_payment_id,
+            )
+            return int(sub["id"])
+        return await db.create_yoga_subscription(uid, product, expires_at, last_payment_id)
+
+    async def _kick_from_channel(channel_id: int, tg_id: int):
+        try:
+            await bot.ban_chat_member(channel_id, tg_id)
+            await bot.unban_chat_member(channel_id, tg_id)
+        except Exception:
+            pass
+
+    WELCOME_YOGA_TEXT = (
+        "Добро пожаловать 🤍\n\n"
+        "💰 <b>Оплата прошла успешно</b> — вы в закрытой группе йога‑практик 🧘‍♀️\n\n"
+        "🫶🏼 Здесь вас ждёт регулярная поддержка, мягкая работа с телом и состоянием, "
+        "а главное — пространство для себя без спешки и давления.\n\n"
+        "✅ Все анонсы практик, ссылки и важная информация будут появляться в группе."
+    )
+
+    if direction == "yoga":
         plan = _extract_yoga_plan(payload)
-        channel_id = None
-        if plan == 4:
-            channel_id = cfg.yoga_channel_4_id
-        elif plan == 8:
-            channel_id = cfg.yoga_channel_8_id
-
-        if channel_id:
-            invite = await bot.create_chat_invite_link(
-                chat_id=channel_id,
-                name=f"yoga{plan}:{tg_user_id}:{payment_id}",
-                member_limit=1,
-                expire_date=datetime.utcnow() + timedelta(days=2),
-            )
-
-            access_expires_at = datetime.utcnow() + timedelta(days=30)
-
-            is_first = await db.is_first_yoga_subscription(user_db_id)
-
-            # создать подписку (yoga_4 / yoga_8)
-            product = f"yoga_{plan}"
-            await db.create_yoga_subscription(
-                user_id=user_db_id,
-                product=product,
-                expires_at=access_expires_at,
-                last_payment_id=payment_id,
-                channel_id=int(channel_id),
-            )
-
-            await bot.send_message(
-                chat_id=tg_user_id,
-                text=(
-                    "✅ <b>Оплата подтверждена</b>\n\n"
-                    f"🧘 Ваш тариф: <b>{plan} занятий/мес</b>\n"
-                    f"📅 Доступ активен до: <b>{access_expires_at:%d.%m.%Y}</b>\n\n"
-                    "Вот ссылка для входа в закрытый канал:\n\n"
-                    f"🔗 {invite.invite_link}\n\n"
-                    f"Если ссылка не открывается — напишите Ольге {cfg.olga_telegram}."
-                ),
-                parse_mode="HTML",
-            )
-
-            # отправляем приветствие
-            await bot.send_message(
-                tg_user_id,
-                WELCOME_YOGA_TEXT,
-                parse_mode="HTML",
-            )
-
-            ONBOARDING_TEXT = (
-                "Немного о формате 📝\n\n"
-                "▫️ Практики проходят регулярно в этой группе\n"
-                "▫️ Все записи сохраняются\n"
-                "▫️ Можно заниматься в удобное время\n\n"
-                "⏳ Доступ: <b>в течение 1 месяца</b>\n\n"
-                "<b>Варианты участия:</b>\n"
-                "▪️ 4 практики в месяц\n"
-                "▪️ 8 практик в месяц\n"
-                "▪️ Индивидуальный формат 1-1 (персональная работа, запрос под вас)\n\n"
-                "Сегодня — знакомимся!\n"
-                "Напишите, пожалуйста:\n"
-                "1️⃣ Имя\n"
-                "2️⃣ Из какого города/страны\n"
-                "3️⃣ Как вы чувствуете своё тело сейчас? Занимались ли вы йогой раньше?"
-            )
-
-            if is_first:
-                await bot.send_message(tg_user_id, ONBOARDING_TEXT, parse_mode="HTML")
-                await state.update_data(yoga_intro_plan=plan, yoga_intro_payment_id=payment_id)
-                await state.set_state("WAIT_YOGA_INTRO")
-
-
-        else:
-            # if we can't detect plan, don't crash
+        if plan not in (4, 8):
             await bot.send_message(
                 chat_id=tg_user_id,
                 text=(
                     "✅ <b>Оплата подтверждена</b>\n\n"
                     "Спасибо! Мы получили подтверждение оплаты.\n\n"
-                    "💬 В ближайшее время с вами свяжется <b>Ольга</b>, "
-                    "чтобы договориться о дальнейших шагах."
+                    "💬 В ближайшее время с вами свяжется <b>Ольга</b>.\n"
                     "Если вы долго не получаете ответа, вы можете написать ей напрямую:\n\n"
-                    f"👉 <b>{cfg.olga_telegram}</b>\n\n"
+                    f"👉 <b>{cfg.olga_telegram}</b>"
                 ),
                 parse_mode="HTML",
             )
+        else:
+            new_product = f"yoga_{plan}"
+            new_channel_id = cfg.yoga_channel_4_id if plan == 4 else cfg.yoga_channel_8_id
 
+            cur_sub = await _get_active_yoga_sub(user_db_id)
+            cur_product = cur_sub["product"] if cur_sub else None
+            cur_expires = cur_sub["expires_at"] if cur_sub else None
+
+            now_utc = datetime.now(timezone.utc)
+            days = int(getattr(cfg, "yoga_subscription_days", 30))
+
+            if isinstance(cur_expires, datetime) and cur_expires > now_utc:
+                new_expires = cur_expires + timedelta(days=days)
+                is_first_join = False
+            else:
+                new_expires = now_utc + timedelta(days=days)
+                is_first_join = True
+
+            await _upsert_yoga_sub(user_db_id, new_product, new_expires, payment_id)
+
+            changing_plan = bool(cur_product) and cur_product != new_product
+
+            if changing_plan:
+                old_plan = 4 if "4" in str(cur_product) else 8 if "8" in str(cur_product) else None
+                old_channel_id = cfg.yoga_channel_4_id if old_plan == 4 else cfg.yoga_channel_8_id if old_plan == 8 else None
+                if old_channel_id:
+                    await _kick_from_channel(old_channel_id, tg_user_id)
+
+                invite = await bot.create_chat_invite_link(
+                    chat_id=new_channel_id,
+                    name=f"yoga{plan}:{tg_user_id}:{payment_id}",
+                    member_limit=1,
+                    expire_date=datetime.now(timezone.utc) + timedelta(days=2),
+                )
+
+                await bot.send_message(
+                    chat_id=tg_user_id,
+                    text=(
+                        "✅ <b>Оплата подтверждена</b>\n\n"
+                        f"🧘 Ваш новый тариф: <b>{plan} практик/мес</b>\n"
+                        f"⏳ Доступ до: <b>{_fmt_date(new_expires)}</b>\n\n"
+                        "Вот ссылка для входа в нужную группу:\n\n"
+                        f"🔗 {invite.invite_link}\n\n"
+                        f"Если ссылка не открывается — напишите Ольге {cfg.olga_telegram}."
+                    ),
+                    parse_mode="HTML",
+                )
+
+                if is_first_join:
+                    await bot.send_message(tg_user_id, WELCOME_YOGA_TEXT, parse_mode="HTML")
+
+            else:
+                if is_first_join:
+                    invite = await bot.create_chat_invite_link(
+                        chat_id=new_channel_id,
+                        name=f"yoga{plan}:{tg_user_id}:{payment_id}",
+                        member_limit=1,
+                        expire_date=datetime.now(timezone.utc) + timedelta(days=2),
+                    )
+                    await bot.send_message(
+                        chat_id=tg_user_id,
+                        text=(
+                            "✅ <b>Оплата подтверждена</b>\n\n"
+                            f"🧘 Тариф: <b>{plan} практик/мес</b>\n"
+                            f"⏳ Доступ до: <b>{_fmt_date(new_expires)}</b>\n\n"
+                            "Вот ссылка для входа в закрытую группу:\n\n"
+                            f"🔗 {invite.invite_link}\n\n"
+                            f"Если ссылка не открывается — напишите Ольге {cfg.olga_telegram}."
+                        ),
+                        parse_mode="HTML",
+                    )
+                    await bot.send_message(tg_user_id, WELCOME_YOGA_TEXT, parse_mode="HTML")
+                else:
+                    await bot.send_message(
+                        chat_id=tg_user_id,
+                        text=(
+                            "✅ <b>Оплата подтверждена</b>\n\n"
+                            f"Доступ в группу продлён до: <b>{_fmt_date(new_expires)}</b> 🤍\n\n"
+                            "Если вы долго не получаете ответа, вы можете написать Ольге напрямую:\n"
+                            f"👉 <b>{cfg.olga_telegram}</b>"
+                        ),
+                        parse_mode="HTML",
+                    )
     else:
         await bot.send_message(
             chat_id=tg_user_id,
@@ -216,36 +268,44 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot, state: FSMContext):
                 "Спасибо! Мы получили подтверждение оплаты.\n\n"
                 "💬 В ближайшее время с вами свяжется <b>Ольга</b>.\n"
                 "Если вы долго не получаете ответа, вы можете написать ей напрямую:\n\n"
-                f"👉 <b>{cfg.olga_telegram}</b>\n\n"),
+                f"👉 <b>{cfg.olga_telegram}</b>"
+            ),
             parse_mode="HTML",
         )
 
-    # покажем всплывашку
     await call.answer("✅ Подтверждено")
 
-    # вместо edit_text/edit_caption -> отправляем новое админу
-    chat = await bot.get_chat(tg_user_id)
-    user_name = chat.full_name
-    if chat.username:
-        user_name += f" (@{chat.username})"
+    try:
+        chat = await bot.get_chat(tg_user_id)
+        user_name = chat.full_name
+        if chat.username:
+            user_name += f" (@{chat.username})"
+    except Exception:
+        user_name = str(tg_user_id)
+
     safe_user_name = html.escape(user_name)
 
-    await bot.send_message(
-        chat_id=call.from_user.id,  # админ, который нажал
-        text=(
-            "✅ <b>Оплата подтверждена</b>\n"
-            f"👤 Пользователь: <b>{safe_user_name}</b>\n"
-            "📨 Пользователь уведомлён."
-        ),
-        parse_mode="HTML",
-    )
+    for admin_id in getattr(cfg, "admin_ids", []):
+        try:
+            await bot.send_message(
+                chat_id=admin_id,
+                text=(
+                    "✅ <b>Оплата подтверждена</b>\n"
+                    f"👤 Пользователь: <b>{safe_user_name}</b>\n"
+                    f"🧾 Payment ID: <code>{payment_id}</code>"
+                ),
+                parse_mode="HTML",
+            )
+        except Exception:
+            pass
 
-    # опционально: попробуем убрать кнопки (если не получится — не падаем)
     try:
         await call.message.delete()
-    except Exception as e:
-        print("FAILED TO DELETE:", repr(e))
-        pass
+    except Exception:
+        try:
+            await call.message.edit_reply_markup(reply_markup=None)
+        except Exception:
+            pass
 
 @router.callback_query(lambda c: c.data.startswith("adm_no:"))
 async def admin_reject(call: CallbackQuery, db, cfg, bot):
