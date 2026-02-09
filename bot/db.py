@@ -297,3 +297,23 @@ class Database:
             user_id
         )
         return row is None
+
+
+async def get_user_id_by_tg(self, tg_user_id: int) -> int | None:
+    row = await self.fetchrow("SELECT id FROM users WHERE tg_user_id=$1", tg_user_id)
+    return int(row["id"]) if row else None
+
+async def get_active_yoga_subscription(self, user_id: int):
+    # активна если expires_at is null (forever) или expires_at > now
+    row = await self.fetchrow(
+        """
+        SELECT id, user_id, product, expires_at, last_payment_id
+        FROM subscriptions
+        WHERE user_id=$1
+          AND (expires_at IS NULL OR expires_at > NOW())
+        ORDER BY expires_at DESC NULLS FIRST, id DESC
+        LIMIT 1
+        """,
+        user_id
+    )
+    return dict(row) if row else None

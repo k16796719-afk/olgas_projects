@@ -143,10 +143,16 @@ def payment_wait_kb(order_id: int) -> InlineKeyboardMarkup:
     ])
 
 
-def yoga_renew_kb():
+def yoga_renew_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="💳 Оплатить продление",
-            callback_data="yoga_renew"
-        )]
+        [InlineKeyboardButton(text="💳 Оплатить (продлить)", callback_data="yoga_renew:pay")],
+        [InlineKeyboardButton(text="🔁 Сменить тариф", callback_data="yoga_renew:change")],
+        [InlineKeyboardButton(text="⬅️ В меню", callback_data="menu")],
+    ])
+
+def yoga_change_plan_kb(cfg) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=f"🧘 4 практики — {cfg.prices.yoga_4_rub} RUB", callback_data="yoga_renew_pick:yoga_4")],
+        [InlineKeyboardButton(text=f"🧘‍♀️ 8 практик — {cfg.prices.yoga_8_rub} RUB", callback_data="yoga_renew_pick:yoga_8")],
+        [InlineKeyboardButton(text="⬅️ Назад", callback_data="yoga_renew:back")],
     ])

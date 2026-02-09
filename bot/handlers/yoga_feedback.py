@@ -4,7 +4,7 @@ from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
 
-from bot.keyboards.keyboards import yoga_renew_kb, payment_method_kb
+from bot.keyboards.keyboards import yoga_renew_kb, payment_method_kb, yoga_change_plan_kb
 from bot.states.yoga_feedback import YogaFeedback
 from bot.keyboards.yoga_feedback_kb import *
 
@@ -83,11 +83,69 @@ async def finish(call: CallbackQuery, state: FSMContext, bot, cfg):
     await state.clear()
     await call.answer()
 
-@router.callback_query(lambda c: c.data == "yoga_renew")
-async def yoga_renew(call: CallbackQuery, state: FSMContext):
-    await state.update_data(direction="yoga")
-    await call.message.answer(
-        "Выберите способ оплаты:",
-        reply_markup=payment_method_kb(prefix="yoga_renew")
+
+@router.callback_query(lambda c: c.data == "yoga_renew:pay")
+async def yoga_renew_pay(call: CallbackQuery, state: FSMContext, db, cfg):
+    uid = await db.get_user_id_by_tg(call.from_user.id)
+    if not uid:
+        await call.answer("Не нашёл пользователя. Нажми /start", show_alert=True)
+        return
+
+    sub = await db.get_active_yoga_subscription(uid)  # сделай функцию, см. ниже
+    if not sub:
+        await call.answer("У тебя нет активного доступа. Оформи новый заказ через меню.", show_alert=True)
+        return
+
+    product = sub["product"]  # ожидаем "yoga_4" или "yoga_8"
+    price_map = {
+        "yoga_4": cfg.prices.yoga_4_rub,
+        "yoga_8": cfg.prices.yoga_8_rub,
+    }
+    amount = int(price_map.get(product, 0))
+    if not amount:
+        await call.answer("Не смог определить сумму. Напиши администратору.", show_alert=True)
+        return
+
+    title_map = {
+        "yoga_4": "Йога 4 практики/мес",
+        "yoga_8": "Йога 8 практик/мес",
+    }
+
+    await state.update_data(
+        direction="yoga",
+        flow="renew_same",
+        product=product,
+        product_title=title_map.get(product, product),
+        amount=amount,
     )
+
+    await call.message.answer("Выбери способ оплаты 💳", reply_markup=payment_method_kb(prefix=f"renew_same:{product}"))
+    await call.answer()
+
+
+@router.callback_query(lambda c: c.data == "yoga_renew:change")
+async def yoga_renew_change(call: CallbackQuery, state: FSMContext, cfg):
+    await state.update_data(direction="yoga", flow="renew_change")
+    await call.message.answer("Выбери новый тариф 👇", reply_markup=yoga_change_plan_kb(cfg))
+    await call.answer()
+
+
+@router.callback_query(lambda c: c.data.startswith("yoga_renew_pick:"))
+async def yoga_renew_pick(call: CallbackQuery, state: FSMContext, cfg):
+    _, product = call.data.split(":", 1)  # yoga_4 / yoga_8
+
+    price_map = {"yoga_4": cfg.prices.yoga_4_rub, "yoga_8": cfg.prices.yoga_8_rub}
+    title_map = {"yoga_4": "Йога 4 практики/мес", "yoga_8": "Йога 8 практик/мес"}
+
+    amount = int(price_map[product])
+
+    await state.update_data(
+        direction="yoga",
+        flow="renew_change",
+        product=product,
+        product_title=title_map[product],
+        amount=amount,
+    )
+
+    await call.message.answer("Выбери способ оплаты 💳", reply_markup=payment_method_kb(prefix=f"renew_change:{product}"))
     await call.answer()
