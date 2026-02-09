@@ -46,6 +46,9 @@ async def _ensure_user(db, message_or_call) -> int:
 @router.callback_query(lambda c: c.data.startswith("pay_m:"))
 async def pick_payment_method(call: CallbackQuery, state: FSMContext, db, cfg):
     # pay_m:<prefix>:<method>
+    print("CALL DATA")
+    print(call.data)
+
     _, prefix, method = call.data.split(":", 2)
 
     print("PAYMENT_METHOD")
