@@ -722,3 +722,65 @@ class Database:
             user_id, channel_key
         )
         logger.info(f"Logged channel revoke for user {user_id}, channel: {channel_key}")
+
+    # ==================== Yoga Feedback ====================
+
+    async def get_subscriptions_expiring_between(
+            self,
+            start: datetime,
+            end: datetime
+    ) -> List[asyncpg.Record]:
+        """
+        Получить подписки на йогу, истекающие в заданном временном окне.
+
+        Args:
+            start: Начало временного окна
+            end: Конец временного окна
+
+        Returns:
+            List of records с подписками
+        """
+        return await self.fetch(
+            """
+            SELECT s.id, s.user_id, s.product, s.expires_at, s.feedback_sent_at,
+                   u.tg_user_id
+            FROM subscriptions s
+            JOIN users u ON u.id = s.user_id
+            WHERE s.product LIKE 'yoga_%'
+              AND s.status = $1
+              AND s.expires_at BETWEEN $2 AND $3
+            ORDER BY s.expires_at ASC
+            """,
+            SubscriptionStatus.ACTIVE,
+            start,
+            end
+        )
+
+    async def mark_feedback_sent(self, sub_id: int) -> None:
+        """
+        Пометить, что для подписки отправлен запрос на feedback.
+
+        Args:
+            sub_id: Subscription ID
+        """
+        await self.execute(
+            "UPDATE subscriptions SET feedback_sent_at = NOW() WHERE id = $1",
+            sub_id
+        )
+        logger.info(f"Marked feedback sent for subscription {sub_id}")
+
+    async def get_subscription_feedback_status(self, sub_id: int) -> Optional[dict]:
+        """
+        Получить статус отправки feedback для подписки.
+
+        Args:
+            sub_id: Subscription ID
+
+        Returns:
+            Dict с полями feedback_sent_at или None
+        """
+        row = await self.fetchrow(
+            "SELECT id, feedback_sent_at FROM subscriptions WHERE id = $1",
+            sub_id
+        )
+        return dict(row) if row else None
