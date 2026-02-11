@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, time
+
+try:
+    from zoneinfo import ZoneInfo
+except Exception:  # pragma: no cover
+    ZoneInfo = None  # type: ignore
 
 from aiogram import Bot
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -12,8 +17,12 @@ from bot.services.access import kick_user
 
 logger = logging.getLogger(__name__)
 
-# Бразильский часовой пояс (UTC-3)
-BRAZIL_TZ = timezone(timedelta(hours=-3))
+# Бразильский часовой пояс (Рио-де-Жанейро)
+# Важно: используем IANA timezone, чтобы не ловить сюрпризы, если когда-нибудь вернут DST.
+if ZoneInfo:
+    BRAZIL_TZ = ZoneInfo("America/Sao_Paulo")
+else:  # fallback
+    BRAZIL_TZ = timezone(timedelta(hours=-3))
 
 
 def add_jobs(scheduler: AsyncIOScheduler, *, bot: Bot, db, cfg) -> None:
@@ -82,11 +91,17 @@ def add_jobs(scheduler: AsyncIOScheduler, *, bot: Bot, db, cfg) -> None:
         Выполняется ежедневно в 6:00 по бразильскому времени (UTC-3).
         """
         try:
-            # Вычисляем временное окно "завтра"
-            # Ищем подписки, которые истекают через 24±1 час
-            now = datetime.now(timezone.utc)
-            tomorrow_start = now + timedelta(hours=23)
-            tomorrow_end = now + timedelta(hours=25)
+            # Вычисляем окно "завтра" по местному времени (Бразилия/Рио)
+            # Так уведомление придёт всем, у кого срок истекает завтра (по дате),
+            # а не только тем, кто попадает в "24±1 час" от момента запуска джобы.
+            now_local = datetime.now(BRAZIL_TZ)
+            tomorrow_date = (now_local + timedelta(days=1)).date()
+
+            start_local = datetime.combine(tomorrow_date, time.min, tzinfo=BRAZIL_TZ)
+            end_local = start_local + timedelta(days=1)
+
+            tomorrow_start = start_local.astimezone(timezone.utc)
+            tomorrow_end = end_local.astimezone(timezone.utc)
 
             logger.debug(
                 f"Checking for yoga subscriptions expiring between "
@@ -173,16 +188,15 @@ def add_jobs(scheduler: AsyncIOScheduler, *, bot: Bot, db, cfg) -> None:
     logger.info(
         f"Scheduled yoga_sweeper job at {cfg.sweeper_hour:02d}:{cfg.sweeper_minute:02d} UTC"
     )
-
     # Добавляем задачу отправки опросников
-    # Выполняется в 6:00 по бразильскому времени (9:00 UTC)
+    # Выполняется в 06:00 по бразильскому времени (America/Sao_Paulo)
     scheduler.add_job(
         send_yoga_feedback_reminder,
         trigger="cron",
-        hour=9,  # 6:00 Brazil time (UTC-3) = 9:00 UTC
+        hour=6,
         minute=0,
-        timezone="UTC",
+        timezone="America/Sao_Paulo",
         id="yoga_feedback_reminder",
         replace_existing=True,
     )
-    logger.info("Scheduled yoga_feedback_reminder job at 09:00 UTC (06:00 Brazil time)")
+    logger.info("Scheduled yoga_feedback_reminder job at 06:00 America/Sao_Paulo")
