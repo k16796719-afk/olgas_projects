@@ -66,6 +66,43 @@ def add_jobs(scheduler: AsyncIOScheduler, *, bot: Bot, db, cfg) -> None:
                     # Помечаем подписку как истекшую
                     await db.mark_subscription_expired(sub_id)
 
+                    # Уведомляем админов (после успешной обработки)
+                    expires_at_val = sub.get("expires_at")
+                    if isinstance(expires_at_val, datetime):
+                        expires_at_text = expires_at_val.astimezone(BRAZIL_TZ).strftime("%d.%m.%Y %H:%M")
+                    else:
+                        # Если из БД пришла строка/что-то ещё, просто покажем как есть
+                        expires_at_text = str(expires_at_val) if expires_at_val is not None else "unknown"
+
+                    if product in (YOGA_4, YOGA_8):
+                        channel_id = cfg.yoga_channel_4_id if product == YOGA_4 else cfg.yoga_channel_8_id
+                        channel_tag = "yoga_4" if product == YOGA_4 else "yoga_8"
+                        admin_text = (
+                            "🚫 Удаление из канала\n"
+                            f"• tg_id: {tg_user_id}\n"
+                            f"• user_id: {user_id}\n"
+                            f"• продукт: {channel_tag}\n"
+                            f"• канал: {channel_id}\n"
+                            f"• expires_at (Rio): {expires_at_text}\n"
+                            f"• sub_id: {sub_id}"
+                        )
+                    else:
+                        # Индивидуальный формат может не иметь группового канала
+                        admin_text = (
+                            "⏳ Подписка истекла (без канала)\n"
+                            f"• tg_id: {tg_user_id}\n"
+                            f"• user_id: {user_id}\n"
+                            f"• продукт: {product}\n"
+                            f"• expires_at (Rio): {expires_at_text}\n"
+                            f"• sub_id: {sub_id}"
+                        )
+
+                    for admin_id in getattr(cfg, "ADMIN_IDS", []):
+                        try:
+                            await bot.send_message(admin_id, admin_text)
+                        except Exception as e:
+                            logger.warning(f"Failed to notify admin {admin_id}: {e}")
+
                     # Уведомляем пользователя
                     try:
                         await bot.send_message(
