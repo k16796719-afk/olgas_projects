@@ -5,7 +5,7 @@ import logging
 from typing import Union
 
 from aiogram import Router, F
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import StateFilter
 
@@ -53,6 +53,35 @@ PREFIX_TO_STATE = {
     "astro": AstroFlow.wait_proof,
     "mentor": MentorFlow.wait_proof,
 }
+
+
+def _prefix_from_direction(direction: str) -> str | None:
+    """
+    Маппинг направления (orders.direction) в FSM prefix.
+    Должен совпадать с тем, как у тебя построены состояния.
+    """
+    if not direction:
+        return None
+
+    d = direction.lower()
+
+    if "yoga" in d or "йог" in d:
+        return "yoga"
+    if "eng" in d or "англ" in d or "english" in d:
+        return "eng"
+
+    # если появятся новые продукты — добавить тут
+    return None
+
+def _pending_payment_actions_kb(order_id: int) -> InlineKeyboardMarkup:
+    """Кнопки для управления существующим незавершенным платежом."""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="✅ Завершить оплату", callback_data=f"pay_resume:{order_id}")],
+            [InlineKeyboardButton(text="🔁 Сменить способ оплаты", callback_data=f"pay_change:{order_id}")],
+            [InlineKeyboardButton(text="❌ Отменить", callback_data=f"order_cancel:{order_id}")],
+        ]
+    )
 
 
 def _method_title(method: str) -> str:
@@ -156,18 +185,8 @@ async def pick_payment_method(call: CallbackQuery, state: FSMContext, db, cfg):
         logger.warning(f"Unknown prefix: {prefix}")
         return
 
-    # Проверка существующих платежей
-    try:
-        if await db.pending_payment_exists_for_user(call.from_user.id):
-            await call.answer(
-                "У тебя уже есть неоплаченный/непроверенный платеж. Сначала заверши его.",
-                show_alert=True
-            )
-            return
-    except Exception as e:
-        logger.error(f"Error checking pending payments for user {call.from_user.id}: {e}")
-        await call.answer("Ошибка проверки платежей. Попробуй позже.", show_alert=True)
-        return
+    # Проверка существующих платежей (и даём пользователю понятные кнопки, а не "ну ты там разберись")
+    # Важно: делаем это ПОСЛЕ проверки state.direction (ниже), чтобы продолжить именно нужный продукт.
 
     # Получаем или создаём пользователя
     try:
@@ -184,6 +203,44 @@ async def pick_payment_method(call: CallbackQuery, state: FSMContext, db, cfg):
         await call.answer("Сессия устарела. Нажми /menu", show_alert=True)
         logger.warning(f"No direction in state for user {call.from_user.id}")
         return
+
+    # Если уже есть незавершённый платеж по этому направлению, показываем способы его завершить/отменить.
+    try:
+        if await db.pending_payment_exists_for_user(call.from_user.id):
+            ctx = None
+            get_ctx = getattr(db, "get_pending_payment_context_for_user", None)
+            if get_ctx:
+                try:
+                    ctx = await get_ctx(call.from_user.id, direction=direction)
+                except TypeError:
+                    # если сигнатура без direction
+                    ctx = await get_ctx(call.from_user.id)
+
+            if ctx and ctx.get("order_id"):
+                order_id = int(ctx["order_id"])
+                days_hint = ""
+                # Небольшая подсказка, если это proof_submitted
+                if str(ctx.get("payment_status")) == "proof_submitted":
+                    days_hint = "\n\nТвой чек уже отправлен на проверку. Можно просто дождаться ответа админа."
+                await call.message.edit_text(
+                    "У тебя уже есть незавершённый платеж по этому продукту. "
+                    "Выбери, что сделать дальше:" + days_hint,
+                    reply_markup=_pending_payment_actions_kb(order_id),
+                )
+                await call.answer()
+                return
+
+            # fallback: есть pending, но не смогли понять какой именно
+            await call.answer(
+                "У тебя уже есть неоплаченный/непроверенный платеж. Сначала заверши его.",
+                show_alert=True
+            )
+            return
+    except Exception as e:
+        logger.error(f"Error checking pending payments for user {call.from_user.id}: {e}")
+        await call.answer("Ошибка проверки платежей. Попробуй позже.", show_alert=True)
+        return
+
 
     # Валидация суммы
     try:
@@ -350,6 +407,65 @@ async def _handle_proof_photo(message: Message, state: FSMContext, db, cfg, bot)
 
 
 # Единый хендлер для всех состояний wait_proof
+
+
+@router.callback_query(lambda c: c.data.startswith("pay_resume:"))
+async def resume_pending_payment(call: CallbackQuery, state: FSMContext, db, cfg):
+    """Продолжить конкретный незавершённый платеж (показать инструкции и дать загрузить чек)."""
+    parts = _parse_callback_data(call.data, 2)
+    if not parts:
+        await call.answer("Ошибка формата данных", show_alert=True)
+        return
+
+    _, order_id_s = parts
+    try:
+        order_id = int(order_id_s)
+    except Exception:
+        await call.answer("Некорректный ID заказа", show_alert=True)
+        return
+
+    try:
+        order = await db.get_order(order_id)
+        if not order:
+            await call.answer("Заказ не найден", show_alert=True)
+            return
+
+        pay = await db.get_pending_payment_for_order(order_id) if hasattr(db, "get_pending_payment_for_order") else None
+        if not pay:
+            await call.answer("Не найден незавершённый платеж для этого заказа", show_alert=True)
+            return
+
+        method = pay.get("method")
+        currency = pay.get("currency")
+        payment_id = int(pay["id"]) if pay.get("id") else None
+
+        # обновляем state, чтобы обработчик чека писал proof в правильный payment_id
+        await state.update_data(
+            direction=order.get("direction"),
+            order_id=order_id,
+            payment_id=payment_id,
+            pay_method=method,
+            pay_currency=currency,
+        )
+
+        instr = payment_instructions(method=method, currency=currency, cfg=cfg)
+        await call.message.edit_text(
+            instr,
+            reply_markup=payment_wait_kb(order_id),
+            parse_mode="HTML",
+        )
+
+        # ставим корректное FSM состояние ожидания proof
+        prefix = _prefix_from_direction(order.get("direction"))
+        new_state = PREFIX_TO_STATE.get(prefix)
+        if new_state:
+            await state.set_state(new_state)
+
+        await call.answer("Продолжаем оплату")
+    except Exception as e:
+        logger.error(f"Failed to resume pending payment for order {order_id}: {e}")
+        await call.answer("Не получилось продолжить оплату. Попробуй позже.", show_alert=True)
+
 @router.message(
     StateFilter(
         LangFlow.wait_proof,

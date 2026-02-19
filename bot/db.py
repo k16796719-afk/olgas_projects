@@ -489,6 +489,109 @@ class Database:
         )
         return row is not None
 
+
+    async def get_pending_payment_context_for_user(
+            self,
+            tg_user_id: int,
+            direction: Optional[str] = None
+    ) -> Optional[dict]:
+        """
+        Получить контекст незавершённого платежа пользователя (конкретный order + payment).
+
+        Возвращает самый свежий платеж со статусом pending/proof_submitted вместе с order_id.
+        Если передан direction, фильтрует по нему.
+
+        Args:
+            tg_user_id: Telegram user ID
+            direction: направление (опционально)
+
+        Returns:
+            Dict с полями order_id, payment_id, payment_status, method, currency, amount, direction или None
+        """
+        if direction:
+            row = await self.fetchrow(
+                """
+                SELECT
+                    o.id AS order_id,
+                    o.direction AS direction,
+                    p.id AS payment_id,
+                    p.status AS payment_status,
+                    p.method AS method,
+                    p.currency AS currency,
+                    p.amount AS amount,
+                    p.proof_file_id AS proof_file_id,
+                    p.created_at AS payment_created_at,
+                    p.updated_at AS payment_updated_at
+                FROM payments p
+                JOIN orders o ON o.id = p.order_id
+                JOIN users u ON u.id = o.user_id
+                WHERE u.tg_user_id = $1
+                  AND o.direction = $2
+                  AND p.status IN ($3, $4)
+                ORDER BY p.created_at DESC, p.id DESC
+                LIMIT 1
+                """,
+                tg_user_id,
+                direction,
+                PaymentStatus.PENDING,
+                PaymentStatus.PROOF_SUBMITTED
+            )
+        else:
+            row = await self.fetchrow(
+                """
+                SELECT
+                    o.id AS order_id,
+                    o.direction AS direction,
+                    p.id AS payment_id,
+                    p.status AS payment_status,
+                    p.method AS method,
+                    p.currency AS currency,
+                    p.amount AS amount,
+                    p.proof_file_id AS proof_file_id,
+                    p.created_at AS payment_created_at,
+                    p.updated_at AS payment_updated_at
+                FROM payments p
+                JOIN orders o ON o.id = p.order_id
+                JOIN users u ON u.id = o.user_id
+                WHERE u.tg_user_id = $1
+                  AND p.status IN ($2, $3)
+                ORDER BY p.created_at DESC, p.id DESC
+                LIMIT 1
+                """,
+                tg_user_id,
+                PaymentStatus.PENDING,
+                PaymentStatus.PROOF_SUBMITTED
+            )
+
+        return dict(row) if row else None
+
+    async def get_pending_payment_for_order(self, order_id: int) -> Optional[dict]:
+        """
+        Получить самый свежий незавершённый платеж для конкретного заказа.
+
+        Args:
+            order_id: Order ID
+
+        Returns:
+            Dict с данными платежа или None
+        """
+        row = await self.fetchrow(
+            """
+            SELECT id, order_id, method, currency, amount, status,
+                   proof_file_id, admin_id_approved, created_at, updated_at
+            FROM payments
+            WHERE order_id = $1
+              AND status IN ($2, $3)
+            ORDER BY created_at DESC, id DESC
+            LIMIT 1
+            """,
+            order_id,
+            PaymentStatus.PENDING,
+            PaymentStatus.PROOF_SUBMITTED
+        )
+        return dict(row) if row else None
+
+
     # ==================== Subscriptions ====================
 
     async def create_yoga_subscription(
