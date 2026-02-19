@@ -272,6 +272,8 @@ async def admin_approve(call: CallbackQuery, state: FSMContext, db, cfg, bot):
                         parse_mode="HTML",
                     )
                     await bot.send_message(tg_user_id, WELCOME_YOGA_TEXT, parse_mode="HTML")
+                    await _start_yoga_intro(bot, state, tg_user_id=tg_user_id, plan_label=str(plan), payment_id=payment_id)
+
                 else:
                     await bot.send_message(
                         chat_id=tg_user_id,
