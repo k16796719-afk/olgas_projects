@@ -78,7 +78,6 @@ def _pending_payment_actions_kb(order_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="✅ Завершить оплату", callback_data=f"pay_resume:{order_id}")],
-            [InlineKeyboardButton(text="🔁 Сменить способ оплаты", callback_data=f"pay_change:{order_id}")],
             [InlineKeyboardButton(text="❌ Отменить", callback_data=f"order_cancel:{order_id}")],
         ]
     )
