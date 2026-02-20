@@ -318,9 +318,9 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
                         try:
                             await bot.send_message(int(new_channel_id), channel_text, parse_mode="HTML", disable_web_page_preview=True)
                             logger.info("Message to channel sent")
-                        except Exception:
+                        except Exception as e:
                             # не ломаем подтверждение оплаты, если бот не может писать в канал
-                            logger.info("Message to channel was not sent")
+                            logger.info(f"Message to channel was not sent: {e}")
                             pass
                 else:
                     logger.info("not first join")
