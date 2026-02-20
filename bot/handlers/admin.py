@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import logging
 
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
@@ -13,6 +14,7 @@ from bot.services.access import create_invite_link
 
 router = Router()
 
+logger = logging.getLogger(__name__)
 
 
 def _get_yoga_channel_id(cfg) -> int | None:
@@ -262,27 +264,28 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
                     parse_mode="HTML",
                 )
 
-                if is_first_join:
-                    await bot.send_message(tg_user_id, WELCOME_YOGA_TEXT, parse_mode="HTML")
+                await bot.send_message(tg_user_id, WELCOME_YOGA_TEXT, parse_mode="HTML")
 
 
                     # Публикуем в канале йоги: приветствие + просьба рассказать о себе в комментариях
-                    yoga_channel_id = _get_yoga_channel_id(cfg)
-                    if yoga_channel_id:
-                        user_mention = _mention_user_html(tg_user_id)
-                        safe_plan = html.escape(str(plan)) if plan is not None else "?"
-                        channel_text = (
-                            "🧘‍♀️ <b>Новая участница в йоге</b>\n"
-                            f"👤 {user_mention}\n"
-                            "Напиши в комментариях пару строк о себе: цель, опыт, ограничения (если есть)."
-                        )
-                        try:
-                            await bot.send_message(int(yoga_channel_id), channel_text, parse_mode="HTML", disable_web_page_preview=True)
-                        except Exception:
+                yoga_channel_id = _get_yoga_channel_id(cfg)
+                if yoga_channel_id:
+                    user_mention = _mention_user_html(tg_user_id)
+                    safe_plan = html.escape(str(plan)) if plan is not None else "?"
+                    channel_text = (
+                    "🧘‍♀️ <b>Новая участница в йоге</b>\n"
+                    f"👤 {user_mention}\n"
+                    "Напиши в комментариях пару строк о себе: цель, опыт, ограничения (если есть)."
+                    )
+                    try:
+                        await bot.send_message(int(yoga_channel_id), channel_text, parse_mode="HTML", disable_web_page_preview=True)
+                    except Exception:
+                        logger.info("notification to channel was not sent (change plan)")
                             # не ломаем подтверждение оплаты, если бот не может писать в канал
-                            pass
+                        pass
             else:
                 if is_first_join:
+                    logger.info("first join")
                     invite = await bot.create_chat_invite_link(
                         chat_id=new_channel_id,
                         name=f"yoga{plan}:{tg_user_id}:{payment_id}",
@@ -305,6 +308,7 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
 
                     # Публикуем в канале йоги: приветствие + просьба рассказать о себе в комментариях
                     yoga_channel_id = _get_yoga_channel_id(cfg)
+                    logger.info(yoga_channel_id)
                     if yoga_channel_id:
                         user_mention = _mention_user_html(tg_user_id)
                         safe_plan = html.escape(str(plan)) if plan is not None else "?"
@@ -315,10 +319,14 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
                         )
                         try:
                             await bot.send_message(int(yoga_channel_id), channel_text, parse_mode="HTML", disable_web_page_preview=True)
+                            logger.info("Message to channel sent")
                         except Exception:
                             # не ломаем подтверждение оплаты, если бот не может писать в канал
+                            logger.info("Message to channel was not sent")
                             pass
                 else:
+                    logger.info("not first join")
+
                     await bot.send_message(
                         chat_id=tg_user_id,
                         text=(
