@@ -276,7 +276,7 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
                         user_full_name = str(tg_user_id)
                     user_mention = _mention_user_html(tg_user_id, user_full_name)
                     channel_text = (
-                    "🧘‍♀️ <b>Новая участница в йоге</b>\n"
+                    "🧘‍♀️ <b>Новая(ый) участница(к) в йоге</b>\n"
                     f"👤 {user_mention}\n"
                     "Напиши в комментариях пару строк о себе: цель, опыт, ограничения (если есть)."
                     )
@@ -319,7 +319,7 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
                             user_full_name = str(tg_user_id)
                         user_mention = _mention_user_html(tg_user_id, user_full_name)
                         channel_text = (
-                            "🧘‍♀️ <b>Новая участница в йоге</b>\n"
+                            "🧘‍♀️ <b>Новая(ый) участница(к) в йоге</b>\n"
                             f"👤 {user_mention}\n"
                             "Напиши в комментариях пару строк о себе: цель, опыт, ограничения (если есть)."
                         )
