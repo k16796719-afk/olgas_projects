@@ -268,8 +268,7 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
 
 
                     # Публикуем в канале йоги: приветствие + просьба рассказать о себе в комментариях
-                yoga_channel_id = _get_yoga_channel_id(cfg)
-                if yoga_channel_id:
+                if new_channel_id:
                     user_mention = _mention_user_html(tg_user_id)
                     safe_plan = html.escape(str(plan)) if plan is not None else "?"
                     channel_text = (
@@ -278,7 +277,7 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
                     "Напиши в комментариях пару строк о себе: цель, опыт, ограничения (если есть)."
                     )
                     try:
-                        await bot.send_message(int(yoga_channel_id), channel_text, parse_mode="HTML", disable_web_page_preview=True)
+                        await bot.send_message(int(new_channel_id), channel_text, parse_mode="HTML", disable_web_page_preview=True)
                     except Exception:
                         logger.info("notification to channel was not sent (change plan)")
                             # не ломаем подтверждение оплаты, если бот не может писать в канал
@@ -307,9 +306,8 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
                     await bot.send_message(tg_user_id, WELCOME_YOGA_TEXT, parse_mode="HTML")
 
                     # Публикуем в канале йоги: приветствие + просьба рассказать о себе в комментариях
-                    yoga_channel_id = _get_yoga_channel_id(cfg)
-                    logger.info(yoga_channel_id)
-                    if yoga_channel_id:
+                    logger.info(new_channel_id)
+                    if new_channel_id:
                         user_mention = _mention_user_html(tg_user_id)
                         safe_plan = html.escape(str(plan)) if plan is not None else "?"
                         channel_text = (
@@ -318,7 +316,7 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
                             "Напиши в комментариях пару строк о себе: цель, опыт, ограничения (если есть)."
                         )
                         try:
-                            await bot.send_message(int(yoga_channel_id), channel_text, parse_mode="HTML", disable_web_page_preview=True)
+                            await bot.send_message(int(new_channel_id), channel_text, parse_mode="HTML", disable_web_page_preview=True)
                             logger.info("Message to channel sent")
                         except Exception:
                             # не ломаем подтверждение оплаты, если бот не может писать в канал
