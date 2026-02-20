@@ -269,7 +269,7 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
 
                     # Публикуем в канале йоги: приветствие + просьба рассказать о себе в комментариях
                 if new_channel_id:
-                    user_mention = _mention_user_html(tg_user_id)
+                    user_mention = _mention_user_html(tg_user_id, "")
                     safe_plan = html.escape(str(plan)) if plan is not None else "?"
                     channel_text = (
                     "🧘‍♀️ <b>Новая участница в йоге</b>\n"
@@ -308,7 +308,7 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
                     # Публикуем в канале йоги: приветствие + просьба рассказать о себе в комментариях
                     logger.info(new_channel_id)
                     if new_channel_id:
-                        user_mention = _mention_user_html(tg_user_id)
+                        user_mention = _mention_user_html(tg_user_id, "")
                         safe_plan = html.escape(str(plan)) if plan is not None else "?"
                         channel_text = (
                             "🧘‍♀️ <b>Новая участница в йоге</b>\n"
