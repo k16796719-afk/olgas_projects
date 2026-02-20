@@ -275,7 +275,7 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
                     except Exception:
                         user_full_name = str(tg_user_id)
                     user_mention = _mention_user_html(tg_user_id, user_full_name)
-                    channel_text = (
+                    channel_text1 = (
                         "Добро пожаловать 🤍\n"
                         "💰Оплата прошла успешно - вы в закрытой группе йога практик 🧘‍♀️\n"
                         "🫶🏼Здесь вас ждёт регулярная поддержка, мягкая работа с телом и состоянием,\n"
@@ -286,15 +286,18 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
                         "▫️ Все записи сохраняются\n"
                         "▫️ Можно заниматься в удобное время\n"
                         "Доступ: в течение 1 месяца\n"
+                    )
+                    channel_text2 = (
                         "🧘‍♀️ <b>Сегодня - знакомимся! </b>\n"
-                            f"👤 {user_mention}\n"
-                            "Напишите:\n"
-                            "1️⃣ Имя \n"
-                            "2️⃣ Из какого города/страны \n"
-                            "3️⃣ Как вы чувствуете свое тело на данный момент? Занимались ли вы когда-нибудь йогой? "
+                        f"👤 {user_mention}\n"
+                        "Напишите:\n"
+                        "1️⃣ Имя \n"
+                        "2️⃣ Из какого города/страны \n"
+                        "3️⃣ Как вы чувствуете свое тело на данный момент? Занимались ли вы когда-нибудь йогой? "
                     )
                     try:
-                        await bot.send_message(int(new_channel_id), channel_text, parse_mode="HTML", disable_web_page_preview=True)
+                        await bot.send_message(int(new_channel_id), channel_text1, parse_mode="HTML", disable_web_page_preview=True)
+                        await bot.send_message(int(new_channel_id), channel_text2, parse_mode="HTML", disable_web_page_preview=True)
                     except Exception:
                         logger.info("notification to channel was not sent (change plan)")
                             # не ломаем подтверждение оплаты, если бот не может писать в канал
@@ -331,7 +334,7 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
                         except Exception:
                             user_full_name = str(tg_user_id)
                         user_mention = _mention_user_html(tg_user_id, user_full_name)
-                        channel_text = (
+                        channel_text1 = (
                             "Добро пожаловать 🤍\n"
                             "💰Оплата прошла успешно - вы в закрытой группе йога практик 🧘‍♀️\n"
                             "🫶🏼Здесь вас ждёт регулярная поддержка, мягкая работа с телом и состоянием,\n"
@@ -342,6 +345,8 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
                             "▫️ Все записи сохраняются\n"
                             "▫️ Можно заниматься в удобное время\n"
                             "Доступ: в течение 1 месяца\n"
+                        )
+                        channel_text2 = (
                             "🧘‍♀️ <b>Сегодня - знакомимся! </b>\n"
                             f"👤 {user_mention}\n"
                             "Напишите:\n"
@@ -350,7 +355,8 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
                             "3️⃣ Как вы чувствуете свое тело на данный момент? Занимались ли вы когда-нибудь йогой? "
                         )
                         try:
-                            await bot.send_message(int(new_channel_id), channel_text, parse_mode="HTML", disable_web_page_preview=True)
+                            await bot.send_message(int(new_channel_id), channel_text1, parse_mode="HTML", disable_web_page_preview=True)
+                            await bot.send_message(int(new_channel_id), channel_text2, parse_mode="HTML", disable_web_page_preview=True)
                             logger.info("Message to channel sent")
                         except Exception as e:
                             # не ломаем подтверждение оплаты, если бот не может писать в канал
