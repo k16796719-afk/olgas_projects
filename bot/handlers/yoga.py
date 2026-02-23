@@ -1,4 +1,5 @@
 from __future__ import annotations
+import html
 from aiogram import Router
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
@@ -10,6 +11,36 @@ from bot.keyboards.keyboards import yoga_plan_kb, payment_method_kb
 from bot.constants import D_YOGA, YOGA_4, YOGA_8, YOGA_10IND
 
 router = Router()
+
+def _get_yoga_channel_id(cfg) -> int | None:
+    """Достаём chat_id канала йоги из конфига (поддерживаем разные имена полей)."""
+    for attr in ("yoga_channel_id", "yoga_channel", "yoga_intro_channel_id", "yoga_public_channel_id"):
+        val = getattr(cfg, attr, None)
+        if val:
+            try:
+                return int(val)
+            except Exception:
+                pass
+
+    for container_name in ("channels", "chat_ids", "chats"):
+        container = getattr(cfg, container_name, None)
+        if container is None:
+            continue
+        for key in ("yoga", "yoga_channel", "yoga_intro"):
+            val = None
+            try:
+                val = getattr(container, key, None)
+            except Exception:
+                val = None
+            if (not val) and isinstance(container, dict):
+                val = container.get(key)
+            if val:
+                try:
+                    return int(val)
+                except Exception:
+                    pass
+    return None
+
 
 @router.callback_query(lambda c: c.data == "dir:yoga")
 async def yoga_start(call: CallbackQuery, state: FSMContext, cfg):
@@ -69,6 +100,23 @@ async def yoga_intro_catcher(message: Message, state: FSMContext, db, cfg, bot):
             await bot.send_message(admin_id, text_to_admins, parse_mode="HTML")
         except Exception:
             # не падаем из-за одного админа
+            pass
+
+    # Также публикуем знакомство в канале йоги
+    channel_id = _get_yoga_channel_id(cfg)
+    if channel_id:
+        safe_user = html.escape(user_line)
+        safe_plan = html.escape(str(plan)) if plan is not None else "?"
+        safe_answer = html.escape(message.text)
+        text_to_channel = (
+            "🧘‍♀️ <b>Знакомство</b>\n"
+            f"👤 <b>Кто:</b> {safe_user}\n"
+            f"🎫 <b>Тариф:</b> {safe_plan}\n\n"
+            f"📝 <b>О себе:</b>\n{safe_answer}"
+        )
+        try:
+            await bot.send_message(int(channel_id), text_to_channel, parse_mode="HTML", disable_web_page_preview=True)
+        except Exception:
             pass
 
     await message.answer("Спасибо! Я передала ваши ответы Ольге 🤍")
