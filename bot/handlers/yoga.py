@@ -102,9 +102,8 @@ async def yoga_intro_catcher(message: Message, state: FSMContext, db, cfg, bot):
         safe_plan = html.escape(str(plan)) if plan is not None else "?"
         safe_answer = html.escape(message.text)
         text_to_channel = (
-            "🧘‍♀️ <b>Знакомство</b>\n"
-            f"👤 <b>Кто:</b> {safe_user}\n"
-            f"🎫 <b>Тариф:</b> {safe_plan}\n\n"
+            "🧘‍♀️ <b>А сейчас знакомимся!</b>\n"
+            f"👤 <b>К нам присоединился </b> {safe_user}\n"
             f"📝 <b>О себе:</b>\n{safe_answer}"
         )
         try:
