@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import html
-import logging
 
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
+from aiogram.fsm.storage.base import StorageKey
 from aiogram.types import CallbackQuery
 
 from bot.constants import (
@@ -14,46 +14,28 @@ from bot.services.access import create_invite_link
 
 router = Router()
 
-logger = logging.getLogger(__name__)
-
-
-def _get_yoga_channel_id(cfg) -> int | None:
-    """Достаём chat_id канала йоги из конфига (поддерживаем разные имена полей)."""
-    for attr in ("yoga_channel_id", "yoga_channel", "yoga_channel_chat_id"):
-        val = getattr(cfg, attr, None)
-        if val:
-            try:
-                return int(val)
-            except Exception:
-                pass
-
-    for container_name in ("channels", "chat_ids", "chats"):
-        container = getattr(cfg, container_name, None)
-        if container is None:
-            continue
-        for key in ("yoga", "yoga_channel", "yoga_intro"):
-            val = None
-            try:
-                val = getattr(container, key, None)
-            except Exception:
-                val = None
-            if (not val) and isinstance(container, dict):
-                val = container.get(key)
-            if val:
-                try:
-                    return int(val)
-                except Exception:
-                    pass
-    return None
-
-
-def _mention_user_html(tg_id: int, full_name: str) -> str:
-    """Кликабельное упоминание пользователя."""
-    safe_name = html.escape(full_name or "участник")
-    return f'<a href="tg://user?id={int(tg_id)}">{safe_name}</a>'
-
 def _is_admin(user_id: int, cfg) -> bool:
     return user_id in cfg.admin_ids
+
+async def _start_yoga_intro(bot, state: FSMContext, *, tg_user_id: int, plan_label: str, payment_id: int):
+    """Запускает сбор знакомства для йоги: переводит пользователя в WAIT_YOGA_INTRO и просит ответ."""
+    user_ctx = FSMContext(
+        storage=state.storage,
+        key=StorageKey(bot_id=bot.id, chat_id=tg_user_id, user_id=tg_user_id),
+    )
+    await user_ctx.clear()
+    await user_ctx.set_state("WAIT_YOGA_INTRO")
+    await user_ctx.update_data(yoga_intro_plan=plan_label, yoga_intro_payment_id=payment_id)
+
+    await bot.send_message(
+        chat_id=tg_user_id,
+        text=(
+            "✅ <b>Оплата подтверждена</b> 🤍\n\n"
+            "Давай коротко познакомимся: напиши, пожалуйста, 1–3 предложения о себе и цели занятий.\n"
+            "Я передам это Ольге."
+        ),
+        parse_mode="HTML",
+    )
 
 async def _grant_access(bot, db, cfg, *, tg_user_id: int, user_db_id: int, direction: str, payload: dict):
     # Always grant personal channel for paid services (as per spec)
@@ -89,7 +71,7 @@ async def _grant_access(bot, db, cfg, *, tg_user_id: int, user_db_id: int, direc
     return links
 
 @router.callback_query(lambda c: c.data.startswith("adm_ok:"))
-async def admin_approve(call: CallbackQuery, db, cfg, bot):
+async def admin_approve(call: CallbackQuery, state: FSMContext, db, cfg, bot):
     if not _is_admin(call.from_user.id, cfg):
         await call.answer("Нет доступа", show_alert=True)
         return
@@ -216,6 +198,7 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
                 ),
                 parse_mode="HTML",
             )
+            await _start_yoga_intro(bot, state, tg_user_id=tg_user_id, plan_label="индивидуально", payment_id=payment_id)
         else:
             new_product = f"yoga_{plan}"
             new_channel_id = cfg.yoga_channel_4_id if plan == 4 else cfg.yoga_channel_8_id
@@ -264,47 +247,13 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
                     parse_mode="HTML",
                 )
 
-                await bot.send_message(tg_user_id, WELCOME_YOGA_TEXT, parse_mode="HTML")
+                if is_first_join:
+                    await bot.send_message(tg_user_id, WELCOME_YOGA_TEXT, parse_mode="HTML")
+                    await _start_yoga_intro(bot=bot, state=state, tg_user_id=tg_user_id, plan_label=str(plan), payment_id=payment_id)
+                    await _start_yoga_intro(bot, state, tg_user_id=tg_user_id, plan_label=str(plan), payment_id=payment_id)
 
-
-                    # Публикуем в канале йоги: приветствие + просьба рассказать о себе в комментариях
-                if new_channel_id:
-                    try:
-                        user_chat = await bot.get_chat(tg_user_id)
-                        user_full_name = user_chat.full_name
-                    except Exception:
-                        user_full_name = str(tg_user_id)
-                    user_mention = _mention_user_html(tg_user_id, user_full_name)
-                    channel_text1 = (
-                        "Добро пожаловать 🤍\n"
-                        "💰Оплата прошла успешно - вы в закрытой группе йога практик 🧘‍♀️\n"
-                        "🫶🏼Здесь вас ждёт регулярная поддержка, мягкая работа с телом и состоянием,\n"
-                        "а главное - пространство для себя без спешки и давления.\n"
-                        "✅Все анонсы практик, ссылки и важная информация будут появляться здесь.\n"
-                        "Немного о формате 📝\n"
-                        "▫️ Практики проходят регулярно в этой группе\n"
-                        "▫️ Все записи сохраняются\n"
-                        "▫️ Можно заниматься в удобное время\n"
-                        "Доступ: в течение 1 месяца\n"
-                    )
-                    channel_text2 = (
-                        "🧘‍♀️ <b>Сегодня - знакомимся! </b>\n"
-                        f"👤 {user_mention}\n"
-                        "Напишите:\n"
-                        "1️⃣ Имя \n"
-                        "2️⃣ Из какого города/страны \n"
-                        "3️⃣ Как вы чувствуете свое тело на данный момент? Занимались ли вы когда-нибудь йогой? "
-                    )
-                    try:
-                        await bot.send_message(int(new_channel_id), channel_text1, parse_mode="HTML", disable_web_page_preview=True)
-                        await bot.send_message(int(new_channel_id), channel_text2, parse_mode="HTML", disable_web_page_preview=True)
-                    except Exception:
-                        logger.info("notification to channel was not sent (change plan)")
-                            # не ломаем подтверждение оплаты, если бот не может писать в канал
-                        pass
             else:
                 if is_first_join:
-                    logger.info("first join")
                     invite = await bot.create_chat_invite_link(
                         chat_id=new_channel_id,
                         name=f"yoga{plan}:{tg_user_id}:{payment_id}",
@@ -324,47 +273,8 @@ async def admin_approve(call: CallbackQuery, db, cfg, bot):
                         parse_mode="HTML",
                     )
                     await bot.send_message(tg_user_id, WELCOME_YOGA_TEXT, parse_mode="HTML")
-
-                    # Публикуем в канале йоги: приветствие + просьба рассказать о себе в комментариях
-                    logger.info(new_channel_id)
-                    if new_channel_id:
-                        try:
-                            user_chat = await bot.get_chat(tg_user_id)
-                            user_full_name = user_chat.full_name
-                        except Exception:
-                            user_full_name = str(tg_user_id)
-                        user_mention = _mention_user_html(tg_user_id, user_full_name)
-                        channel_text1 = (
-                            "Добро пожаловать 🤍\n"
-                            "💰Оплата прошла успешно - вы в закрытой группе йога практик 🧘‍♀️\n"
-                            "🫶🏼Здесь вас ждёт регулярная поддержка, мягкая работа с телом и состоянием,\n"
-                            "а главное - пространство для себя без спешки и давления.\n"
-                            "✅Все анонсы практик, ссылки и важная информация будут появляться здесь.\n"
-                            "Немного о формате 📝\n"
-                            "▫️ Практики проходят регулярно в этой группе\n"
-                            "▫️ Все записи сохраняются\n"
-                            "▫️ Можно заниматься в удобное время\n"
-                            "Доступ: в течение 1 месяца\n"
-                        )
-                        channel_text2 = (
-                            "🧘‍♀️ <b>Сегодня - знакомимся! </b>\n"
-                            f"👤 {user_mention}\n"
-                            "Напишите:\n"
-                            "1️⃣ Имя \n"
-                            "2️⃣ Из какого города/страны \n"
-                            "3️⃣ Как вы чувствуете свое тело на данный момент? Занимались ли вы когда-нибудь йогой? "
-                        )
-                        try:
-                            await bot.send_message(int(new_channel_id), channel_text1, parse_mode="HTML", disable_web_page_preview=True)
-                            await bot.send_message(int(new_channel_id), channel_text2, parse_mode="HTML", disable_web_page_preview=True)
-                            logger.info("Message to channel sent")
-                        except Exception as e:
-                            # не ломаем подтверждение оплаты, если бот не может писать в канал
-                            logger.info(f"Message to channel was not sent: {e}")
-                            pass
+                    await _start_yoga_intro(bot=bot, state=state, tg_user_id=tg_user_id, plan_label=str(plan), payment_id=payment_id)
                 else:
-                    logger.info("not first join")
-
                     await bot.send_message(
                         chat_id=tg_user_id,
                         text=(
