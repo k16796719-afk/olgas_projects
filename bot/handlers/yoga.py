@@ -12,35 +12,27 @@ from bot.constants import D_YOGA, YOGA_4, YOGA_8, YOGA_10IND
 
 router = Router()
 
-def _get_yoga_channel_id(cfg) -> int | None:
-    """Достаём chat_id канала йоги из конфига (поддерживаем разные имена полей)."""
-    for attr in ("yoga_channel_id", "yoga_channel", "yoga_intro_channel_id", "yoga_public_channel_id"):
-        val = getattr(cfg, attr, None)
-        if val:
-            try:
-                return int(val)
-            except Exception:
-                pass
+def _get_yoga_channel_id(cfg, plan) -> int | None:
+    """Возвращает chat_id для публикации по тарифу йоги (4/8) или персональный (если задан)."""
+    # plan может быть int (4/8) или строка
+    try:
+        p = int(plan)
+    except Exception:
+        s = str(plan or "")
+        # грубый, но практичный парсер
+        if "8" in s:
+            p = 8
+        elif "4" in s:
+            p = 4
+        else:
+            p = None
 
-    for container_name in ("channels", "chat_ids", "chats"):
-        container = getattr(cfg, container_name, None)
-        if container is None:
-            continue
-        for key in ("yoga", "yoga_channel", "yoga_intro"):
-            val = None
-            try:
-                val = getattr(container, key, None)
-            except Exception:
-                val = None
-            if (not val) and isinstance(container, dict):
-                val = container.get(key)
-            if val:
-                try:
-                    return int(val)
-                except Exception:
-                    pass
+    if p == 4:
+        return int(cfg.yoga_channel_4_id)
+    if p == 8:
+        return int(cfg.yoga_channel_8_id)
+
     return None
-
 
 @router.callback_query(lambda c: c.data == "dir:yoga")
 async def yoga_start(call: CallbackQuery, state: FSMContext, cfg):
@@ -103,7 +95,8 @@ async def yoga_intro_catcher(message: Message, state: FSMContext, db, cfg, bot):
             pass
 
     # Также публикуем знакомство в канале йоги
-    channel_id = _get_yoga_channel_id(cfg)
+    channel_id = _get_yoga_channel_id(cfg, plan)
+    print(channel_id)
     if channel_id:
         safe_user = html.escape(user_line)
         safe_plan = html.escape(str(plan)) if plan is not None else "?"
@@ -116,7 +109,9 @@ async def yoga_intro_catcher(message: Message, state: FSMContext, db, cfg, bot):
         )
         try:
             await bot.send_message(int(channel_id), text_to_channel, parse_mode="HTML", disable_web_page_preview=True)
-        except Exception:
+            print(f"Send to channel")
+        except Exception as e:
+            print(f"Send to channel failed - {e}")
             pass
 
     await message.answer("Спасибо! Я передала ваши ответы Ольге 🤍")
