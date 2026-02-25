@@ -333,11 +333,17 @@ async def admin_approve(call: CallbackQuery, state: FSMContext, db, cfg, bot):
             pass
 
     try:
-        await call.message.delete()
+        original_caption = call.message.caption or ""
+        await call.message.edit_caption(
+            caption=original_caption + "\n\n✅ <b>Подтверждено</b>",
+            parse_mode="HTML",
+            reply_markup=None,  # убираем кнопки
+        )
     except Exception:
         try:
             await call.message.edit_reply_markup(reply_markup=None)
-        except Exception:
+        except Exception as e:
+            print(f"can not approve {e}")
             pass
 
 @router.callback_query(lambda c: c.data.startswith("adm_no:"))
