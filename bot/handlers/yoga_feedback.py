@@ -172,9 +172,10 @@ async def start_feedback_cb(call: CallbackQuery, state: FSMContext):
     await call.answer()
 
 
-@router.message(Command("yoga_feedback_start"))
+from aiogram.filters import Command, StateFilter
+
+@router.message(StateFilter("*"), Command("yoga_feedback_start"))
 async def start_feedback(message: Message, state: FSMContext):
-    """Начать анкету обратной связи (через команду)."""
     await _send_start_question(message, state)
 
 
