@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import logging
 
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
@@ -12,6 +13,7 @@ from bot.constants import (
 )
 from bot.services.access import create_invite_link
 
+logger = logging.getLogger(__name__)
 router = Router()
 
 def _is_admin(user_id: int, cfg) -> bool:
@@ -192,6 +194,22 @@ async def admin_approve(call: CallbackQuery, state: FSMContext, db, cfg, bot):
         "Доступ: в течение 1 месяца\n"
     )
 
+    # ─── Сразу редактируем карточку — до call.answer и любых других запросов ───
+    try:
+        original_caption = call.message.caption or ""
+        await call.message.edit_caption(
+            caption=original_caption + "\n\n✅ <b>Подтверждено</b>",
+            parse_mode="HTML",
+            reply_markup=None,
+        )
+    except Exception as e:
+        logger.error(f"edit_caption failed for payment {payment_id}: {e}")
+        try:
+            await call.message.edit_reply_markup(reply_markup=None)
+        except Exception as e2:
+            logger.error(f"edit_reply_markup also failed: {e2}")
+    # ──────────────────────────────────────────────────────────────────────────
+
     if direction == "yoga":
         plan = _extract_yoga_plan(payload)
         if plan not in (4, 8):
@@ -258,7 +276,6 @@ async def admin_approve(call: CallbackQuery, state: FSMContext, db, cfg, bot):
                 if is_first_join:
                     await bot.send_message(tg_user_id, WELCOME_YOGA_TEXT, parse_mode="HTML")
                     await _start_yoga_intro(bot=bot, state=state, tg_user_id=tg_user_id, plan_label=str(plan), payment_id=payment_id)
-                    await _start_yoga_intro(bot, state, tg_user_id=tg_user_id, plan_label=str(plan), payment_id=payment_id)
 
             else:
                 if is_first_join:
@@ -332,19 +349,6 @@ async def admin_approve(call: CallbackQuery, state: FSMContext, db, cfg, bot):
         except Exception:
             pass
 
-    try:
-        original_caption = call.message.caption or ""
-        await call.message.edit_caption(
-            caption=original_caption + "\n\n✅ <b>Подтверждено</b>",
-            parse_mode="HTML",
-            reply_markup=None,  # убираем кнопки
-        )
-    except Exception:
-        try:
-            await call.message.edit_reply_markup(reply_markup=None)
-        except Exception as e:
-            print(f"can not approve {e}")
-            pass
 
 @router.callback_query(lambda c: c.data.startswith("adm_no:"))
 async def admin_reject(call: CallbackQuery, db, cfg, bot):
