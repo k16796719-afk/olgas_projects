@@ -347,6 +347,7 @@ async def admin_approve(call: CallbackQuery, state: FSMContext, db, cfg, bot):
                 parse_mode="HTML",
             )
         except Exception:
+            logger.info("can not approve ")
             pass
 
 
